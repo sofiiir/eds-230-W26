@@ -11,11 +11,11 @@
 #' @param annual_avg_sol_rad A number indicating annual average 
 #'                                  solar radiation (kWh m$^{-2}$)
 #'
-#' @returns energy_prod A number indicating energy produced (kWh)
+#' @returns A number indicating energy produced (kWh)
 #'
 #' @examples 
 #' photovoltaic_syst(area = 100, 
-#'                   an_sol_rad = 1000)
+#'                   an_sol_rad = 1000) 
 
 
 
