@@ -21,8 +21,8 @@
 
 photovoltaic_syst <- function(area, an_sol_rad) {
   
-  r <- 0.2 # panel yield (dimensionless) representing manufacturer
-  PR <- 0.75 # performance ratio (dimensionless) accounting for site-specific losses
+  r <- 0.2 # panel yield (dimensionless), efficiency  
+  PR <- 0.75 # performance ratio (dimensionless), site-specific losses
   
   energy_prod <- (area * r * annual_avg_sol_rad * PR)
 
