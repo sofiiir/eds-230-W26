@@ -11,8 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #  ASSIGNMENT 3 Almond Yields
 
 
-Lobell et al., 2006 used data to build models of tree crop yield for California that captured how
-climate variation (place and time) might influence yield
+Lobell et al., 2006 used data to build models of tree crop yield for California that captured how climate variation (place and time) might influence yield
 
 
 * Yield anomaly
