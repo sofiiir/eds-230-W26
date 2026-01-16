@@ -1,0 +1,52 @@
+---
+title: "Week 2 Lab"
+format: html
+---
+
+```{r}
+library(tidyverse)
+
+library(purrr)
+
+library(ggpubr)
+
+library(here)
+```
+
+
+```{r}
+# s
+source(here("R/solarpv.R"))
+
+# read in R formatted data
+load(here("Data/sierraczosolar.rda"))
+
+
+# generate ethresh values with 15 percent uncertainty
+deviation <- 0.15
+base_thresh <- 10000
+ethresh <- runif(
+  min = base_thresh - deviation * base_thresh,
+  max = base_thresh + deviation * base_thresh, n = 40
+)
+# ethresh <- rnorm(mean = 10000, sd = (10000*0.15), n = 40)
+
+# run 
+site2 <- ethresh  |>  purrr::map(~ solarpv(area = 0.1, 
+  solar = sierraczosolar, clr = "green", 
+  eunit = "kWhr", g = FALSE, etype = "direct", ethresh = .x))
+
+tmp <- map_dfr(site2, `[`, c("annual"))
+
+# convert from tibble to a data frame
+site2df <- data.frame(year = tmp$annual$year, elect = tmp$annual$elect)
+```
+
+
+```{r}
+# now we could plot
+ggplot(site2df, aes(as.factor(year), elect, group = year)) +
+  geom_boxplot() +
+  labs(y = "Electricity generated in kWhr")
+```
+

@@ -13,7 +13,15 @@
 #' @author Naomi
 #' @return annual (power for each year), avg (average power) (see eunits for units)
 
-solarpv <- function(area, eff = 0.8, PR = 0.75, solar, clr = "blue", eunits = "kJ", etype = "both", g = TRUE, ethresh = 10000) {
+solarpv <- function(area, 
+                    eff = 0.8, 
+                    PR = 0.75, 
+                    solar, 
+                    clr = "blue", 
+                    eunits = "kJ", 
+                    etype = "both", 
+                    g = TRUE, 
+                    ethresh = 10000) {
   # calculate total daily energy - depending on whether array can use diffuse
   if (etype == "diffuse") {
     solar$total <- solar$Kdown_diffuse
@@ -24,6 +32,7 @@ solarpv <- function(area, eff = 0.8, PR = 0.75, solar, clr = "blue", eunits = "k
       solar$total <- solar$Kdown_direct + solar$Kdown_diffuse
     }
   }
+  
 
   # array efficiency declines linearly when solar is below a threshold
   # make an internal function to adjust efficiency based on this
