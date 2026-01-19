@@ -1,5 +1,5 @@
 ---
-title: "almond-yields"
+title: "Alomnd yield calculations"
 format: html
 author: Sofia Rodas
 date: January 22, 2026
@@ -19,7 +19,7 @@ library(here)
  clim_data <- read.table("../../Data/clim.txt",
                     header = TRUE, sep = " ")
 
-source(here("Assignments/assignment3/perrenial-crop-yield.R"))
+source(here("Assignments/assignment3/almond-yield-function.R"))
 ```
 
 
