@@ -59,19 +59,24 @@ yield_fun <- function(min_temp, precip){
 
 
 ```{r}
+# join the two dataframes
 df <- full_join(almond_t2, almond_p1, by = join_by(year))
 ```
 
 
 ```{r}
-alomd_yields <- df |>  map2_dfr( .x = df$min_temp, .y = df$precip, .f =  yield_fun, .ic = TRUE)
+# iterate over the min_temp and precip columns to get the yield function
+df$almond_yields <-  map2(df$min_temp, df$precip, yield_fun)
 
 # iterate through the years
 # almond_yield <- almond_t2 |>  map(~ yield(min_temp = .x, precip = almond_p1$precip))
 
 # alter the data into a single dataframe
-# map_df(almond_yield, `[`)
+#map_dfr(almond_yield, `[`, "mean")
 
 
+```
+```{r}
+# mapply(yield_fun, df$min_temp, df$precip)
 ```
 

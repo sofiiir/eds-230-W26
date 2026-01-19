@@ -19,7 +19,7 @@ crop_yield <- function(clim_data, crop, month, year, min_temp, max_temp, precip)
                 filter(month == 1) |> 
                 summarise(precip = sum(precip))
    
-   map( ~ yield <- (-0.015 * almond_t2$min_temp) - (-0.0046 * (almond_t2$min_temp^2)) - (0.07 * almond_p1$precip) + (0.0043 * almond_p1$precip))
+   map( ~ yield <- (-0.015 * almond_t2$min_temp) - (-0.0046 * (almond_t2$min_temp^2)) - (0.07 * almond_p1$precip) + (0.0043 * (almond_p1$precip^2)))
       
   } else {
     if (etype == "direct") {
