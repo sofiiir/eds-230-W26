@@ -51,9 +51,10 @@ almond_p1$year <- as.factor(almond_p1$year)
 # make a function to calculate yield based on min_temp and total precip
 yield_fun <- function(min_temp, precip){
            yield  = ((-0.015 * min_temp) - 
-               (-0.0046 * (min_temp^2)) - 
+               (0.0046 * (min_temp^2)) - 
                (0.07 * precip) + 
-               (0.0043 * (precip^2))
+               (0.0043 * (precip^2)) +
+               0.28
                )}
 ```
 
