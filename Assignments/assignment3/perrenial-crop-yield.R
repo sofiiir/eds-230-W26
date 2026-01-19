@@ -47,5 +47,5 @@ crop_yield <- function(clim_data, month, year, min_temp, max_temp, precip) {
     # iterate over the min_temp and precip columns to get the yield function
     df$almond_yields <-  map2(df$min_temp, df$precip, yield_fun)
    
-  
+  return(df)
   }

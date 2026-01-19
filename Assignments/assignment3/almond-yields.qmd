@@ -1,6 +1,8 @@
 ---
 title: "almond-yields"
 format: html
+author: Sofia Rodas
+date: January 22, 2026
 warning: false
 meassage: false
 ---
@@ -9,75 +11,23 @@ meassage: false
 # load in appropriate libraries
 library(tidyverse)
 library(purrr)
+library(here)
 ```
 
 ```{r}
 # read in data
  clim_data <- read.table("../../Data/clim.txt",
                     header = TRUE, sep = " ")
+
+source(here("Assignments/assignment3/perrenial-crop-yield.R"))
 ```
 
 
 ```{r}
-# view data
-clim_data
-```
-
-```{r}
- # select the min temp values in february
- almond_t2 <- clim_data |> 
-                  group_by(year) |> 
-                  filter(month == 2) |> 
-                  summarise(min_temp = min(tmin_c)) |> 
-                  ungroup()
-
-# set year as factor 
-almond_t2$year <- as.factor(almond_t2$year)
-``` 
-
-```{r}
-# add the precip values for january
-   almond_p1 <- clim_data |> 
-                group_by(year) |> 
-                filter(month == 1) |> 
-                summarise(precip = sum(precip)) |> 
-                ungroup()
-
-# set year as factor 
-almond_p1$year <- as.factor(almond_p1$year)
-```
-
-```{r}
-# make a function to calculate yield based on min_temp and total precip
-yield_fun <- function(min_temp, precip){
-           yield  = ((-0.015 * min_temp) - 
-               (0.0046 * (min_temp^2)) - 
-               (0.07 * precip) + 
-               (0.0043 * (precip^2)) +
-               0.28
-               )}
-```
-
-
-```{r}
-# join the two dataframes
-df <- full_join(almond_t2, almond_p1, by = join_by(year))
-```
-
-
-```{r}
-# iterate over the min_temp and precip columns to get the yield function
-df$almond_yields <-  map2(df$min_temp, df$precip, yield_fun)
-
-# iterate through the years
-# almond_yield <- almond_t2 |>  map(~ yield(min_temp = .x, precip = almond_p1$precip))
-
-# alter the data into a single dataframe
-#map_dfr(almond_yield, `[`, "mean")
-
-
+# view data structure
+head(clim_data)
 ```
 ```{r}
-# mapply(yield_fun, df$min_temp, df$precip)
+almond_yields <- crop_yield(clim_data)
 ```
 
