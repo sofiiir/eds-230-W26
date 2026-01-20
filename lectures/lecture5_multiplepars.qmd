@@ -365,4 +365,6 @@ Notice that compute_profit_frompower uses compute_NPV (so you need to carry over
 
 What if price increased by a % each year? How would you modify **compute_profit_frompower** to account for that? Or alternatively - what if you wanted to input a different price for each year?
 
-With a partner try it...
+```{r}
+# energy <- seq()
+```
