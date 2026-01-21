@@ -28,8 +28,10 @@ source(here("Assignments/assignment3/almond-yield-function.R"))
 head(clim_data)
 ```
 ```{r}
-almond_yields <- crop_yield(clim_data)
+# run the almond yields function on the clim_data
+almond_yields <- almond_yield(clim_data)
 
+# output the return values
 almond_yields
 ```
 
