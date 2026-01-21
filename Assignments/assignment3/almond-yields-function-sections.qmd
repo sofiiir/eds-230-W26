@@ -81,3 +81,14 @@ df$almond_yields <-  map2(df$min_temp, df$precip, yield_fun)
 # mapply(yield_fun, df$min_temp, df$precip)
 ```
 
+```{r}
+df$almond_yields <- as.double(df$almond_yields)
+```
+
+
+```{r}
+ max_almond_yield <- max(df$almond_yields)
+    min_almond_yield <- min(df$almond_yields)
+   
+```
+

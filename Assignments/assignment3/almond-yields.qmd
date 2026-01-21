@@ -29,5 +29,7 @@ head(clim_data)
 ```
 ```{r}
 almond_yields <- crop_yield(clim_data)
+
+almond_yields
 ```
 

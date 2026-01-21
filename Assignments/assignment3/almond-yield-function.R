@@ -1,12 +1,14 @@
 #' Almond Yield
 #'
 #' Calculate almond yields by accounting for their temperature and precipitation specifications.
-#' @param clim_data dataframe with climate data
-#' @param month month of the temp and precip values (available in the clim_data)
+#' @param clim_data dataframe with climate data (ideally should include month, year, min_temp, and precip)
+#' @param month month of the temp and precip values to be used in the yield equation (available in the clim_data)
 #' @param year year of the temp and precip values (available in the clim_data)
 #' @param min_temp minimum temperature (C) (available in the clim_data)
 #' @param precip precipitation (mm) (available in the clim_data)
-#' @author Sofia
+#' 
+#' @author Sofia Rodas
+#' 
 #' @return dataframe of containing year, minimum temperature, precipitation, and almond yield
 
 crop_yield <- function(clim_data, month, year, min_temp, precip) {
@@ -45,6 +47,12 @@ crop_yield <- function(clim_data, month, year, min_temp, precip) {
     
     # iterate over the min_temp and precip columns to get the yield function
     df$almond_yields <-  map2(df$min_temp, df$precip, yield_fun)
+    
+    df$almond_yields <- as.double(df$almond_yields)
+    
+    max_almond_yield <- max(df$almond_yields)
+    min_almond_yield <- min(df$almond_yields)
+    mean_almond_yield <- mean(df$almond_yields)
    
-  return(df)
+  return(list("Max almond yield:" = max_almond_yield, "Min almond yield:" = min_almond_yield, "Mean almond yield:" = mean_almond_yield))
   }
