@@ -1,11 +1,19 @@
 ---
-title: "Alomnd yield calculations"
-format: html
-author: Sofia Rodas
+title: "Almond yield calculations"
+format: pdf
+authors: Sofia Rodas and Henry Oliver
 date: January 22, 2026
 warning: false
 meassage: false
 ---
+
+#  ASSIGNMENT 3 Almond Yields
+
+## Conceptual model 
+
+![Almond yield conceptual model](almond_conceptual_model.png)
+
+The yield modelling equation was sourced from Lobell et al., 2006. The function is located in an R script and called below to identify the maximum, minimum, and mean almond yields based on climate inputs from 1988 to 2010.
 
 ```{r}
 # load in appropriate libraries
@@ -19,6 +27,7 @@ library(here)
  clim_data <- read.table("../../Data/clim.txt",
                     header = TRUE, sep = " ")
 
+#source the almond yield function
 source(here("Assignments/assignment3/almond-yield-function.R"))
 ```
 

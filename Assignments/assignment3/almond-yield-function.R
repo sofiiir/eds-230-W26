@@ -1,19 +1,20 @@
-#' Almond Yield
+#' Almond Yield Function
 #'
-#' Calculate almond yields by accounting for their temperature and precipitation specifications.
-#' @param clim_data a dataframe with climate data (ideally should include month, year, min_temp, and precip)
-#' @param month an integer between 1- 12 representing the month of the temp and precip values to be used in the yield equation (available in the clim_data)
-#' @param year an integer signifying the year of the temp and precip values (available in the clim_data)
+#' Calculate almond yields by accounting for their temperature and precipitation specifications. The yield modelling equation was sourced from Lobell et al., 2006.
+#' 
+#' @param clim_data a dataframe with climate data (ideally should include month, year, minimum temperature, and precipitation)
+#' @param month an integer between 1 and 12 representing the month of the temperature and precipitation values to be used in the yield equation (available in the clim_data)
+#' @param year an integer signifying the year of the temperature and precipitation values (available in the clim_data)
 #' @param min_temp numeric value denoting minimum temperature (C) (available in the clim_data)
 #' @param precip numeric value showing precipitation (mm) (available in the clim_data)
 #' 
-#' @author Sofia Rodas
+#' @author Sofia Rodas and Henry Oliver
 #' 
-#' @return dataframe of containing year, minimum temperature, precipitation, and almond yield
+#' @return Maximum almond yield (unit ton/acres), minimum almond yield (unit ton/acres), and mean almond yield (unit ton/acres) 
 
 almond_yield <- function(clim_data, month, year, min_temp, precip) {
     
-    # select the min temp values in february
+    # filter for the min temp values in february
     almond_t2 <- clim_data |> 
       group_by(year) |> 
       filter(month == 2) |> 
@@ -23,7 +24,7 @@ almond_yield <- function(clim_data, month, year, min_temp, precip) {
     # set year as factor 
     almond_t2$year <- as.factor(almond_t2$year)
     
-    # add the precip values for january
+    # filter and add precip values for january
     almond_p1 <- clim_data |> 
       group_by(year) |> 
       filter(month == 1) |> 
@@ -36,7 +37,7 @@ almond_yield <- function(clim_data, month, year, min_temp, precip) {
     # join the two dataframes
     df <- full_join(almond_t2, almond_p1, by = join_by(year))
     
-    # make a function to calculate yield based on min_temp and total precip
+    # make a function to calculate yield based on min_temp (feb) and total precip (jan)
     yield_fun <- function(min_temp, precip){
       yield  = ((-0.015 * min_temp) - 
                   (0.0046 * (min_temp^2)) - 
