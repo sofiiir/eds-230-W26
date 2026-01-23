@@ -1,0 +1,74 @@
+---
+title: "Almond yield price calculations"
+format: pdf
+authors: Sofia Rodas and Henry Oliver
+date: January 27, 2026
+warning: false
+meassage: false
+---
+
+#  ASSIGNMENT 4 Almond Yield Profits for the Almond Industry
+
+## Conceptual model 
+
+![Almond yield conceptual model](almond_conceptual_model.png)
+Parameters:
+1) Almond Yield
+2) Market Price of Almonds 3% increase in price every year
+3) Cost of distribution
+Cost of packaging
+Payment to farmers
+Shipping
+Cost of water (reach)
+
+Output:
+Make a new dataframe that takes our yield, price of almonds, and cost of production & distribution, and calculate profit
+
+Year | Yield | Price of Almonds | Cost of Production | Cost of Distribution | Expected Profit
+
+Inputs: 
+Yield --> from yield table
+Price of Almonds (PoA) --> Arbitrary value +3% per year
+Cost of Production (CoP) --> $ per almond
+Cost of Distribution (CoD) --> Distance, $ per mile
+
+Sensitivity analysis on cost of production and cost of distribution.
+
+profit <- (yield * price of almond) - (cost of production + cost of distribution)
+
+The yield modelling equation was sourced from Lobell et al., 2006. The function is located in an R script and called below to identify the maximum, minimum, and mean almond yields based on climate inputs from 1988 to 2010.
+
+```{r}
+# load in appropriate libraries
+library(tidyverse)
+library(purrr)
+library(here)
+```
+
+```{r}
+# read in data
+ clim_data <- read.table("../../Data/clim.txt",
+                    header = TRUE, sep = " ")
+
+#source the almond yield function
+source(here("Assignments/assignment4/almond-yield-function-df.R"))
+```
+
+
+```{r}
+# view data structure
+head(clim_data)
+```
+```{r}
+# run the almond yields function on the clim_data
+almond_yields <- almond_yield_df(clim_data)
+
+# output the return values
+almond_yields
+```
+
+# Sensitivity analysis
+```{r}
+ggplot()
+```
+
