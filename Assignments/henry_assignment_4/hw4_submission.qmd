@@ -1,0 +1,118 @@
+---
+title: "hw4_submission"
+format: html
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(janitor)
+library(purrr)
+```
+
+```{r}
+# read in data
+clim_data <- read.table(here("Data", "clim.txt"),
+                        header = TRUE, 
+                        sep = " ")
+source(here("Assignments/henry_assignment_4/almond_yield.R"))
+source(here("Assignments/henry_assignment_4/revenue_npv.R"))
+source(here("Assignments/henry_assignment_4/cost_npv.R"))
+source(here("Assignments/henry_assignment_4/almond_profit.R"))
+```
+
+```{r}
+# Get almond yield df
+almond_yield <- crop_yield(
+  clim_data = clim_data,
+  month = month,
+  year = year,
+  min_temp = tmin_c,
+  precip = precip
+)
+
+```
+
+
+```{r}
+# Get almond profit df
+almond_profit_df <- almond_profit(
+  yield_df = almond_yield,
+  base_price = 500, # Price per ton of almonds, scales with inflation
+  base_cost = 1000, # Fixed cost - does not change with yield, does change with inflation
+  inflation_rate = 0.03,
+  discount_rate = 0.12
+)
+```
+
+# Sensitivity test
+Boxplots 
+
+1. Fixed cost
+```{r}
+# make the varied fixed cost values
+var_base_cost <- tibble(var_base_cost = seq(from = 500, to = 5000, by = 50))
+
+# add the varied fixed cost values to the almond yield data frame
+fixed_cost_senstest <- expand_grid(almond_yield, var_base_cost)
+
+```
+The fixed costs are the only input we want to vary. Run the `almond_profit` function with the new dataframe.
+```{r}
+# Get almond profit df
+almond_profit_senstest_fc <- almond_profit(
+  yield_df = fixed_cost_senstest,
+  base_price = 500, # Price per ton of almonds, scales with inflation
+  base_cost = fixed_cost_senstest$var_base_cost, # Fixed cost - does not change with yield, does change with inflation
+  inflation_rate = 0.03,
+  discount_rate = 0.12
+)
+```
+
+Let's plot them in a boxplot to analyze how much variation there is in each year based on the variance of fixed costs. 
+```{r}
+almond_profit_senstest_fc |> 
+  mutate(year = as.factor(year)) |> 
+ggplot(aes(x = year, y = profit_npv, group = year)) +
+  geom_boxplot() +
+  labs(title = "NPV Profit - Fixed cost sensitivity test",
+       y = "NPV Profit ($)") +
+  theme_minimal()
+  
+```
+Based on the Almond profit model and the sensitivity test run above, changing fixed profit values does not significantly effect NPV profit. 
+
+
+2. Inflation rate 
+
+```{r}
+# make the varied price values
+var_base_price <- tibble(var_base_price = seq(from = 100, to = 800, by = 50))
+
+# add the varied price values to the almond yield data frame
+price_senstest <- expand_grid(almond_yield, var_base_price)
+
+```
+The price are the only input we want to vary. Run the `almond_profit` function with the new dataframe.
+```{r}
+# Get almond profit df
+almond_profit_senstest_p <- almond_profit(
+  yield_df = price_senstest,
+  base_price = price_senstest$var_base_price, # Price per ton of almonds, scales with inflation
+  base_cost = 1000, # Fixed cost - does not change with yield, does change with inflation
+  inflation_rate = 0.03,
+  discount_rate = 0.12
+)
+```
+
+Let's plot them in a boxplot to analyze how much variation there is in each year based on the variance of price. 
+```{r}
+almond_profit_senstest_p |> 
+  mutate(year = as.factor(year)) |> 
+ggplot(aes(x = year, y = profit_npv, group = year)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "NPV Profit - Inflation rate sensitivity test",
+       y = "NPV Profit ($)")
+  
+```
