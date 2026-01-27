@@ -77,9 +77,19 @@ ggplot(aes(x = year, y = profit_npv, group = year)) +
   geom_boxplot() +
   labs(title = "NPV Profit - Fixed cost sensitivity test",
        y = "NPV Profit ($)") +
-  theme_minimal()
-  
+  theme_minimal() 
 ```
+```{r}
+almond_profit_senstest_fc |> 
+  mutate(year = as.factor(year)) |> 
+ggplot(aes(x = year, y = profit_npv, group = year)) +
+  geom_boxplot() +
+  labs(title = "NPV Profit - Fixed cost sensitivity test",
+       y = "NPV Profit ($)") +
+  theme_minimal() +
+  facet_wrap(~year, scales = "free")
+```
+
 Based on the Almond profit model and the sensitivity test run above, changing fixed profit values does not significantly effect NPV profit. 
 
 
