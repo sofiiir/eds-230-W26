@@ -141,7 +141,7 @@ $v$ is windspeed (cm/s)
 
 Typical values if $k_d$ and $k_o$ are 0.7 and 0.1 respectively (so use those as defaults)
 
-## Sensitivity Anallysis Goal {.scrollable}
+## Sensitivity Analysis Goal {.scrollable}
 
 For a given forest, perform a sensitivity analysis of model predictions of conductance. Consider the sensitivity to uncertainty in the following parameters and inputs
 
@@ -157,7 +157,7 @@ Windspeeds $v$ are normally distributed with a mean of 250 cm/s with a standard 
 
 For vegetation height assume that height is somewhere between 9.5 and 10.5 m (but any value in that range is equally likely)
 
-For the $k_d$ and $k_0$ parameters you can assume that they are normally distributed with standard deviation of 1% of their default values
+For the $k_d$ and $k_0$ parameters you can assume that they are normally distributed with standard deviation of 10% of their default values
 
 ## Quiz {.scrollable}
 
@@ -187,21 +187,33 @@ First we need to generate parameter sets for the Sobol analysis
 source(here("R/Catm.R"))
 
 # decide on number of initial parameter sets
-
+np <- 1000
 # generate two examples of random number from parameter distributions
+k_o <- rnorm(mean = 0.1, sd = 0.1*0.1, n = np)
+k_d <- rnorm(mean = 0.7, sd = 0.7*0.1, n = np)
+v <- rnorm(mean = 250, sd = 30, n = np)
+height <- runif(min = 9.5, max = 10.5, n = np)
 
 # first set call it X1
+X1 <- cbind.data.frame(k_o, k_d, v, height)
 
 # repeat sampling and call it X2
+k_o2 <- rnorm(mean = 0.1, sd = 0.1*0.1, n = np)
+k_d2 <- rnorm(mean = 0.7, sd = 0.7*0.1, n = np)
+v2 <- rnorm(mean = 250, sd = 30, n = np)
+height2 <- runif(min = 9.5, max = 10.5, n = np) 
+
+X2 <- cbind.data.frame(k_o2, k_d2, v2, height2)
 
 # there are different versions of sobol functions that have different approaches for estimating parameters and indices, we use an approach implemented by jansen
 
 # run sobolSalt function giving it X1 and X2 and save result
 
-sens_Catm_Sobol = 
+sens_Catm_Sobol = sobolSalt(model = NULL, X1, X2, nboot = 100)
 
 
 # Take a look at the Sobol generated sensitivity object
+str(sens_Catm_Sobol)
   
 # your parameters sets for sensitivity analysis are in X, look at that as well
 ```
@@ -217,26 +229,35 @@ now run model for Sobol generated parameter sets and compute indices
 
 
 # give parameters names
-
+parms <- as.data.frame(sens_Catm_Sobol$X)
+colnames(parms) <- colnames(X1)
 
 # run the Catm model for all parmeter sets and save results
 #(use pmap_dbl from purrr)
-
+res <- pmap_dbl(parms, Catm)
 
 # now tell our orginal Sobol object about the results.   
+sens_Catm_Sobol <- sensitivity::tell(sens_Catm_Sobol, res, res.names = "gs")
 
 # look at results
 # main effect (S):  partitions variance (main effect without co-variance) - sums approximately to one
+sens_Catm_Sobol$S
 
 # useful to add names (by row)
+row.names(sens_Catm_Sobol$S) <- colnames(parms)
+sens_Catm_Sobol$S
 
 # total effect (T) - accounts for parameter interactions
+row.names(sens_Catm_Sobol$T) <- colnames(parms)
+sens_Catm_Sobol$T
 
 # Both the main effect and total effect can tell us something about how the parameter influences results
 
 
 print(sens_Catm_Sobol)
 ```
+
+The order effect is from the `original` column. If the confidence intervals includes zero it isn't having an effect on the output.
 
 ## Steps: Interpreting Sobol Indices {.scrollable}
 
@@ -255,14 +276,23 @@ TIP: a useful plotting strategy is to plot model output against parameter with t
 ```{r sobolplot}
 
 # first combine parameters and output  
+both <- cbind.data.frame(parms, gs = sens_Catm_Sobol$y)
 
 # look at overall gs sensitivity to all parameter variation
 
 
 # look at response of conductance to the two most important variables choose 
 # second 'most important" as color
+ggplot(both, aes(x = gs)) +
+  geom_histogram() +
+  labs(x = "Atmospheric conductance")
 
 # use second most sensitive parameter (using most important as color)
+ggplot(both, aes(k_d, gs, col = v)) +
+  geom_point()
+
+ggplot(both, aes(v, gs, col = k_d)) +
+  geom_point()
 
 ```
 
@@ -275,6 +305,7 @@ If you want to also compute a second order indices you need to use a different v
 There are multiple implementation of Sobol in the *sensitivity* package, they can be more or less stable I find *sobolSalt* works well
 
 ```{r, alternative}
+# scheme = B to get the second order effect
 sens_Catm_Sobol2 <- sobolSalt(model = NULL, X1, X2, nboot = 100, scheme = "B")
 
 parms <- as.data.frame(sens_Catm_Sobol2$X)
