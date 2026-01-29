@@ -8,7 +8,7 @@
 #' @param discount_rate a numeric value indicating discount rate for NPV calculation, default 0.12
 #'
 #' @return dataframe with columns: year, min_temp, precip, almond_yields, time, price, cost, revenue, profit, revenue_NPV, cost_NPV, profit_NPV
-#' @export
+
 
 almond_profit <- function(yield_df, base_price, base_cost, inflation_rate = 0.03, discount_rate = 0.12) {
   
