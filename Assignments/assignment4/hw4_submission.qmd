@@ -1,0 +1,134 @@
+---
+title: "HW4 Almond Profit & Sensitivity Test"
+format: pdf
+author: Henry Oliver and Sofia Rodas
+date: January 28, 2026
+warning: false
+message: false
+---
+
+This quarto document explores almond profits based on a base price (per ton of almonds), fixed cost, inflation rate, and discount rate. The outcome of the almond profit function is a data frame that includes Net Profit Value almond profits ($USD).
+
+```{r}
+# load necessary libraries
+library(tidyverse)
+library(here)
+library(janitor)
+library(purrr)
+```
+
+```{r}
+# read in data
+clim_data <- read.table(here("Data", "clim.txt"),
+                        header = TRUE, 
+                        sep = " ")
+
+# source the functions
+source(here("Assignments/assignment4/almond_yield.R"))
+source(here("Assignments/assignment4/revenue_npv.R"))
+source(here("Assignments/assignment4/cost_npv.R"))
+source(here("Assignments/assignment4/almond_profit.R"))
+```
+
+## Almond yield 
+
+The almond profit model is a continuation of the work completed for calculating expected almond yield based on the minimum temperature in February and precipitation levels in January. These expected almond yields for each year are utilized to calculate NPV/profit.
+
+First, we run the almond yield model to calculate the expected almond yields for each year. The output is a data frame. The two columns that will be used in the profit model are `year` and `almond_yield`s.
+```{r}
+# calculate almond yield based
+almond_yield <- almond_yield(
+  clim_data = clim_data,
+  month = month,
+  year = year,
+  min_temp = tmin_c,
+  precip = precip
+)
+
+```
+
+## Almond profit 
+
+The almond profit model takes the data frame that is output from the `almond_yield` model. The `year` and `almond_yield` columns are utilized in the function. The additional parameters are base price of almonds (per ton of almond), fixed cost of almond production, inflation rate, and discount rate. 
+```{r}
+# run the almond profit model 
+almond_profit_df <- almond_profit(
+  yield_df = almond_yield,
+  base_price = 500, # price per ton of almonds, scales with inflation
+  base_cost = 1000, # fixed cost - does not change with yield, does change with inflation
+  inflation_rate = 0.03,
+  discount_rate = 0.12
+)
+
+head(almond_profit_df)
+```
+
+
+# Informal Sensitivity Test
+## Analysis on base price and inflation
+The sensitivity test is conducted to analyze how sensitive profit/NPV is to two parameters. We are interested in the effect of base price (per ton of almonds) and inflation rate on profit/NPV. 
+
+### Create the values for the sensitivity test.
+Since we're curious about how variation in the base price and inflation rate values effect profit/NPV, we are creating a list of sequences for both base price and inflation. Each combination of year with its respective almond yield is paired with all of the different values for base price and inflation rates. In other words there is a row in the data frame for each of the unique combinations of year/almond yield, the varied prices, and the varied inflation rates. 
+```{r}
+# make the varied price values
+var_base_price <- tibble(var_base_price = seq(from = 100, to = 800, by = 50))
+
+# add the varied price values to the almond yield data frame
+price_senstest <- expand_grid(almond_yield, var_base_price)
+```
+
+```{r}
+# make the varied inflation rates
+var_inflation <- tibble(var_inflation = seq(from = 0.01, to = 0.7, by = 0.06))
+
+# add the varied inflation rates to the price_senstest data frame
+price_inflation_senstest <- expand_grid(price_senstest, var_inflation)
+```
+The data frame `price_inflation_senstest` includes all of the combinations of year/almond yield, possible base price, and possible inflation rate. 
+
+
+### Calculate profit/NPV for each yield, base price, and inflation value
+```{r}
+# run the profit model on the array of possible inputs
+almond_profit_senstest <- almond_profit(
+  yield_df = price_inflation_senstest,
+  base_price = price_inflation_senstest$var_base_price, # price per ton of almonds, scales with inflation
+  base_cost = 1000, # fixed cost - does not change with yield, does change with inflation
+  inflation_rate = price_inflation_senstest$var_inflation,
+  discount_rate = 0.12
+)
+```
+
+### Visualize the effect 
+We plot to visualize the data and analyze informally what parameter has the greatest effect on the output, in this case profit/NPV.
+```{r}
+ggplot(almond_profit_senstest, aes(x = var_inflation, 
+                                     y = profit_npv, 
+                                     col = var_base_price)) +
+  geom_point(cex = 2, alpha = 0.5) +
+  scale_color_viridis_c(name = "Base price \n(per ton of alomnd) \n($USD)") +
+  labs(x = "Inflation rate",
+       y = "Profit/NPV ($USD)",
+       title = "Inflation rate and base price influence on profit/NPV") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(almond_profit_senstest, aes(x = var_base_price, 
+                                     y = profit_npv, 
+                                     col = var_inflation)) +
+  geom_point(cex = 2, alpha = 0.5) +
+  scale_color_viridis_c(name = "Inflation rate") + 
+  labs(x = "Base price (per ton of almonds) ($USD) ",
+       y = "Profit/NPV ($USD)",
+       title = "Base price and inflation influence on profit/NPV") +
+  theme_minimal()
+```
+## Analysis
+
+Based on this informal sensitivity analysis, the almond's base price (per ton of almonds) does not significantly impact profit/NPV. Inflation rate does appear to impact profit/NPV when inflation rates are above 40%. More formal sensitivity tests would be required to truly analyze the sensitivity of profit/NPV based on the inputs of base price and inflation rate.
+
+Our profit model is fairly simple, hence the parameters do not have a large effect on profit/NPV. 
+
+

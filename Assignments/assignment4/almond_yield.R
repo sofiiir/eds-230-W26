@@ -1,4 +1,4 @@
-#' Almond Yield
+#' Almond Yield Function
 #'
 #' Calculate almond yields by accounting for their temperature and precipitation specifications.
 #' @param clim_data dataframe with climate data
@@ -6,10 +6,11 @@
 #' @param year an integer between 1-12 representing the year of the temp and precip values (available in the clim_data)
 #' @param min_temp minimum temperature (C) (available in the clim_data)
 #' @param precip precipitation (mm) (available in the clim_data)
-#' @author Sofia Rodas
+#' 
+#' @author Sofia Rodas and Henry Oliver
 #' @return dataframe of containing year, minimum temperature, precipitation, and almond yield
 
-crop_yield <- function(clim_data, month, year, min_temp, precip) {
+almond_yield <- function(clim_data, month, year, min_temp, precip) {
   
   # select the min temp values in february
   almond_t2 <- clim_data |> 

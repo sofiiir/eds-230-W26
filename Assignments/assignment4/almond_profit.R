@@ -1,13 +1,14 @@
 
-#' Calculate almond profit with actual and NPV values
+#' Almond Profit Function
 #'
-#' @param yield_df dataframe output from crop_yield() containing year, min_temp, precip, and almond_yields
-#' @param base_price a numeric value indicating price per unit yield in 1989 dollars
-#' @param base_cost a numeric value indicating annual cost in 1989 dollars
-#' @param inflation_rate a numeric value indicating annual inflation rate, default 0.03
+#' @param yield_df dataframe output from almond_yield() containing year, min_temp, precip, and almond_yields
+#' @param base_price a numeric value indicating price per ton of almonds in 1989 dollars ($USD)
+#' @param base_cost a numeric value indicating annual fixed cost of the almond farmers in 1989 dollars ($USD)
+#' @param inflation_rate a numeric value indicating annual inflation rate, default 0.03 
 #' @param discount_rate a numeric value indicating discount rate for NPV calculation, default 0.12
 #'
-#' @return dataframe with columns: year, min_temp, precip, almond_yields, time, price, cost, revenue, profit, revenue_NPV, cost_NPV, profit_NPV
+#'@author Henry Oliver and Sofia Rodas
+#' @return dataframe with columns: year, min_temp, precip, almond_yields, time, price($USD), cost($USD), revenue($USD), profit($USD), revenue_NPV ($USD), cost_NPV($USD), profit_NPV ($USD)
 
 
 almond_profit <- function(yield_df, base_price, base_cost, inflation_rate = 0.03, discount_rate = 0.12) {
