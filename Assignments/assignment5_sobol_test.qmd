@@ -1,0 +1,60 @@
+---
+title: "Assignment 5 Sobol Test"
+format: html
+author: Sofia Rodas
+message: false
+warning: false
+
+---
+
+# Sobol Sensitivity Analysis
+
+```{r}
+#| message: false
+#| warning: false
+
+# load necessary libraries
+library(tidyverse)
+library(sensitivity)
+
+# source the function 
+source(here::here("R/Catm.R"))
+```
+
+```{r}
+# decide on number of initial parameter sets
+np <- 1000
+# generate two examples of random number from parameter distributions
+k_o <- rnorm(mean = 0.1, sd = 0.1*0.1, n = np)
+k_d <- rnorm(mean = 0.7, sd = 0.7*0.1, n = np)
+v <- rnorm(mean = 300, sd = 50, n = np)
+height <- runif(min = 3.5, max = 5.5, n = np)
+
+# first set call it X1
+X1 <- cbind.data.frame(k_o, k_d, v, height)
+
+# repeat sampling and call it X2
+k_o2 <- rnorm(mean = 0.1, sd = 0.1*0.1, n = np)
+k_d2 <- rnorm(mean = 0.7, sd = 0.7*0.1, n = np)
+v2 <- rnorm(mean = 300, sd = 50, n = np)
+height2 <- runif(min = 3.5, max = 5.5, n = np) 
+
+X2 <- cbind.data.frame(k_o2, k_d2, v2, height2)
+```
+
+Use the Sobel approach to generate parameter values for the 4 parameters.
+```{r}
+# run sobolSalt function giving it X1 and X2 and save result
+
+sens_Catm_Sobol <- sobolSalt(model = NULL, X1, X2, nboot = 100)
+
+
+# Take a look at the Sobol generated sensitivity object
+str(sens_Catm_Sobol)
+  
+# your parameters sets for sensitivity analysis are in X, look at that as well
+```
+
+Run the atmospheric conductance model for these parameters
+
+
