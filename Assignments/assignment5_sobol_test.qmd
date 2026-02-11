@@ -9,6 +9,25 @@ warning: false
 
 # Sobol Sensitivity Analysis
 
+This assignment how sensitive our model on atmospheric conductance is to variations of its various parameters. 
+For reference the atmospheric conductance model is as follows.
+
+$$
+C_{at} = \frac{v_m}{6.25*{ln(\frac{z_m-z_d}{z_0})}^2}
+$$
+$$
+z_d = k_d*h
+$$
+
+$$
+z_0 = k_0*h
+$$
+$z_m$ is the height at which windspeed is measured - must be higher than the vegetation (cm), it is usually measured 200 cm above the vegetation
+
+$h$ is vegetation height (cm)
+
+$v$ is windspeed (cm/s)
+
 ```{r}
 #| message: false
 #| warning: false
@@ -20,14 +39,15 @@ library(sensitivity)
 # source the function 
 source(here::here("R/Catm.R"))
 ```
-
+### First we use the Sobel approach to generate parameter values for the 4 parameters.
 ```{r}
 # decide on number of initial parameter sets
 np <- 1000
+
 # generate two examples of random number from parameter distributions
 k_o <- rnorm(mean = 0.1, sd = 0.1*0.1, n = np)
 k_d <- rnorm(mean = 0.7, sd = 0.7*0.1, n = np)
-v <- rnorm(mean = 300, sd = 50, n = np)
+v <- rnorm(mean = 3, sd = .5, n = np)
 height <- runif(min = 3.5, max = 5.5, n = np)
 
 # first set call it X1
@@ -36,37 +56,33 @@ X1 <- cbind.data.frame(k_o, k_d, v, height)
 # repeat sampling and call it X2
 k_o2 <- rnorm(mean = 0.1, sd = 0.1*0.1, n = np)
 k_d2 <- rnorm(mean = 0.7, sd = 0.7*0.1, n = np)
-v2 <- rnorm(mean = 300, sd = 50, n = np)
+v2 <- rnorm(mean = 3, sd = .5, n = np)
 height2 <- runif(min = 3.5, max = 5.5, n = np) 
 
 X2 <- cbind.data.frame(k_o2, k_d2, v2, height2)
 ```
 
-Use the Sobel approach to generate parameter values for the 4 parameters.
+Then we run the atmospheric conductance model for these parameters.
 ```{r}
-# run sobolSalt function giving it X1 and X2 and save result
-
+# run sobolSalt function giving it X1 and X2 and save resul
 sens_Catm_Sobol <- sobolSalt(model = NULL, X1, X2, nboot = 100)
 
 
-# Take a look at the Sobol generated sensitivity object
+# look at the Sobol generated sensitivity object
 str(sens_Catm_Sobol)
-  
-# your parameters sets for sensitivity analysis are in X, look at that as well
 ```
 
-Run the atmospheric conductance model for these parameters
+Finally, we estimate the Sobel Indices for your output.
 
 ```{r}
 # give parameters names
 parms <- as.data.frame(sens_Catm_Sobol$X)
 colnames(parms) <- colnames(X1)
 
-# run the Catm model for all parmeter sets and save results
-#(use pmap_dbl from purrr)
+# run the Catm model for all parameter sets and save results
 res <- pmap_dbl(parms, Catm)
 
-# now tell our orginal Sobol object about the results.   
+# tell our orginal Sobol object about the results.   
 sens_Catm_Sobol <- sensitivity::tell(sens_Catm_Sobol, res, res.names = "gs")
 
 # look at results
@@ -81,30 +97,38 @@ sens_Catm_Sobol$S
 row.names(sens_Catm_Sobol$T) <- colnames(parms)
 sens_Catm_Sobol$T
 
-# Both the main effect and total effect can tell us something about how the parameter influences results
-
-
 print(sens_Catm_Sobol)
 ```
+The first order indices indicate what parameter atmospheric conductance is most sensitive to. Atmospheric conductance is most sensitive to wind speed, `v`. The absolute value in the `original` column is largest for wind speed. Additionally, wind speed has a relatively small standard error compared to the abosolute value and the confidence interval does not contain zero indicating it is significant. Atmospheric conductance is also sensitive to scalar for roughness, `k_o`, and scalar for zero plane displacement, `k_d`. `k_o` and `k_d` have relatively small standard errors and the confidence intervals do not contain zero indicating they are significant. Atmospheric conductance is also sensitive to vegetation height, `height`, however the standard error indicates the relationship may be less definitive.
 
+The total indices is accounting for interaction or covariance between the parameters impact on the output. The total indices results show that even when accounting for interactions between the parameters, atmospheric conductance is most sensitive to wind speed, `v`. The standard error is again relatively small compared to the value and the confidence interval does not include zero indicating this is a significant finding. Atmospheric conductance is also sensitive to scalar for roughness, `k_o`, and scalar for zero plane displacement, `k_d` even when accounting for interactions between the parameters. `k_o` and `k_d` have relatively small standard errors and the confidence intervals do not contain zero indicating they are significant. Atmospheric conductance is also sensitive to vegetation height, `height` when accounting for interactions between the parameter. The `height` standard error is smaller compared to the output when accounting for interactions between the parameters. The confidence interval for `height` also does not include zero indicating the findings are significant.
+
+### Plot conductance estimates in a way that accounts for parameter uncertainty
 ```{r}
 # first combine parameters and output  
 both <- cbind.data.frame(parms, gs = sens_Catm_Sobol$y)
 
-# look at overall gs sensitivity to all parameter variation
-
 
 # look at response of conductance to the two most important variables choose 
 # second 'most important" as color
-ggplot(both, aes(x = gs)) +
+ggplot(both, aes(x  = gs)) +
   geom_histogram() +
-  labs(x = "Atmospheric conductance")
+    geom_vline(xintercept = mean(both$gs), col = "hotpink")+
+  labs(x = "Atmospheric conductance", 
+       y = "Count") +
+  theme_minimal()
+```
 
+### Plot conductance estimates against windspeed use the parameter that is 2nd in terms of total effect on
+response
+```{r}
 # use second most sensitive parameter (using most important as color)
-ggplot(both, aes(k_d, gs, col = v)) +
-  geom_point()
+ggplot(both, aes(x = v, y = gs, col = k_o)) +
+  geom_point() +
+  theme_minimal()
 
 ggplot(both, aes(v, gs, col = k_d)) +
-  geom_point()
+  geom_point() + 
+  theme_minimal()
 ```
 
