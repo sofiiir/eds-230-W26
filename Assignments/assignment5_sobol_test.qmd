@@ -9,7 +9,7 @@ warning: false
 
 # Sobol Sensitivity Analysis
 
-This assignment how sensitive our model on atmospheric conductance is to variations of its various parameters. 
+This assignment tests how sensitive our model on atmospheric conductance is to variations in the distribution of the values of the parameters. 
 For reference the atmospheric conductance model is as follows.
 
 $$
@@ -62,7 +62,7 @@ height2 <- runif(min = 3.5, max = 5.5, n = np)
 X2 <- cbind.data.frame(k_o2, k_d2, v2, height2)
 ```
 
-Then we run the atmospheric conductance model for these parameters.
+### Then we run the atmospheric conductance model for these parameters.
 ```{r}
 # run sobolSalt function giving it X1 and X2 and save resul
 sens_Catm_Sobol <- sobolSalt(model = NULL, X1, X2, nboot = 100)
@@ -72,7 +72,7 @@ sens_Catm_Sobol <- sobolSalt(model = NULL, X1, X2, nboot = 100)
 str(sens_Catm_Sobol)
 ```
 
-Finally, we estimate the Sobel Indices for your output.
+### Finally, we estimate the Sobel Indices for the output.
 
 ```{r}
 # give parameters names
@@ -85,12 +85,10 @@ res <- pmap_dbl(parms, Catm)
 # tell our orginal Sobol object about the results.   
 sens_Catm_Sobol <- sensitivity::tell(sens_Catm_Sobol, res, res.names = "gs")
 
-# look at results
-# main effect (S):  partitions variance (main effect without co-variance) - sums approximately to one
-sens_Catm_Sobol$S
-
 # useful to add names (by row)
 row.names(sens_Catm_Sobol$S) <- colnames(parms)
+
+# main effect (S):  partitions variance (main effect without co-variance) - sums approximately to one
 sens_Catm_Sobol$S
 
 # total effect (T) - accounts for parameter interactions
@@ -99,9 +97,22 @@ sens_Catm_Sobol$T
 
 print(sens_Catm_Sobol)
 ```
-The first order indices indicate what parameter atmospheric conductance is most sensitive to. Atmospheric conductance is most sensitive to wind speed, `v`. The absolute value in the `original` column is largest for wind speed. Additionally, wind speed has a relatively small standard error compared to the abosolute value and the confidence interval does not contain zero indicating it is significant. Atmospheric conductance is also sensitive to scalar for roughness, `k_o`, and scalar for zero plane displacement, `k_d`. `k_o` and `k_d` have relatively small standard errors and the confidence intervals do not contain zero indicating they are significant. Atmospheric conductance is also sensitive to vegetation height, `height`, however the standard error indicates the relationship may be less definitive.
+The first order indices indicate what parameter atmospheric conductance is most sensitive to. Atmospheric conductance is most sensitive to wind speed, `v` for this iteration of the model. The absolute value in the `original` column is largest for wind speed. Additionally, wind speed has a relatively small standard error compared to the abosolute value and the confidence interval does not contain zero indicating it is significant. Atmospheric conductance is also sensitive to scalar for roughness, `k_o`, and scalar for zero plane displacement, `k_d`. `k_o` and `k_d` have relatively small standard errors and the confidence intervals do not contain zero indicating they are significant. Atmospheric conductance is also sensitive to vegetation height, `height`, however the standard error indicates the relationship may be less definitive.
 
-The total indices is accounting for interaction or covariance between the parameters impact on the output. The total indices results show that even when accounting for interactions between the parameters, atmospheric conductance is most sensitive to wind speed, `v`. The standard error is again relatively small compared to the value and the confidence interval does not include zero indicating this is a significant finding. Atmospheric conductance is also sensitive to scalar for roughness, `k_o`, and scalar for zero plane displacement, `k_d` even when accounting for interactions between the parameters. `k_o` and `k_d` have relatively small standard errors and the confidence intervals do not contain zero indicating they are significant. Atmospheric conductance is also sensitive to vegetation height, `height` when accounting for interactions between the parameter. The `height` standard error is smaller compared to the output when accounting for interactions between the parameters. The confidence interval for `height` also does not include zero indicating the findings are significant.
+The total indices is accounting for interaction or covariance between the parameters that have an impact on the output. The total indices results show that even when accounting for interactions between the parameters, atmospheric conductance is most sensitive to wind speed, `v`. The standard error is again relatively small compared to the value and the confidence interval does not include zero indicating this is a significant finding. Atmospheric conductance is also sensitive to scalar for roughness, `k_o`, and scalar for zero plane displacement, `k_d` even when accounting for interactions between the parameters. `k_o` and `k_d` have relatively small standard errors and the confidence intervals do not contain zero indicating they are significant. Atmospheric conductance is also sensitive to vegetation height, `height`, when accounting for interactions between the parameter. The `height` standard error is smaller compared to the output when accounting for interactions between the parameters. The confidence interval for `height` also does not include zero indicating the findings are significant.
+
+**Comment on what this tells you about how atmospheric conductance and its sensitivity to variation in
+windspeed differs in this setting as compared to the setting that we examined in class where windspeed
+was lower and less variable and vegetation was taller.**
+
+The key difference between this model and the model run in class is that the wind speed is higher in this model and has greater variability while the vegetation is shorter. This changes what the model is most sensitive to, which in the case of the model run in this document, it is most sensitive to wind speed (`v`).
+
+In class when wind speed was lower and less variable and the vegetation was taller, atmospheric conductance was most sensitive to the scalar for zero plane displacement, `k_d`. Atmospheric conductance was also sensitive to wind speed, `v`, and scalar for roughness, `k_o`. Zero plane displacement (`k_d`), wind speed (`v`) ,and  the scalar for roughness (`k_o`) all had standard errors that were relatively small compared to the `original` values and had confidence intervals that did not include zero indicating they are significant.
+
+Similarly to the model run in this assignment, the model on atmospheric conductance run in class was sensitive to all of the parameters when accounting for interaction or covariance between the parameters. In both the model run in this document and the model run in class the second most important parameter shifts when accounting for interactions between the parameters. In both the model run in class and this model, the most second most influential parameter does not shift in the total indices. Both models having no shift in the second most important parameter is indicative that the model does not have and interaction or covariance between the parameters impacting the output. 
+
+Note: Since the values are randomly generated, the second most important parameter does shift a portion of the time but the difference in values is not significant. 
+
 
 ### Plot conductance estimates in a way that accounts for parameter uncertainty
 ```{r}
@@ -109,13 +120,13 @@ The total indices is accounting for interaction or covariance between the parame
 both <- cbind.data.frame(parms, gs = sens_Catm_Sobol$y)
 
 
-# look at response of conductance to the two most important variables choose 
-# second 'most important" as color
+# look at overall gs sensitvity to uncertainty
 ggplot(both, aes(x  = gs)) +
   geom_histogram() +
     geom_vline(xintercept = mean(both$gs), col = "hotpink")+
-  labs(x = "Atmospheric conductance", 
-       y = "Count") +
+  labs(x = "Atmospheric conductance (mm/s)", 
+       y = "Count", 
+       title = "Atmospheric conductance sensitivity to uncertainty") +
   theme_minimal()
 ```
 
@@ -125,10 +136,18 @@ response
 # use second most sensitive parameter (using most important as color)
 ggplot(both, aes(x = v, y = gs, col = k_o)) +
   geom_point() +
+   labs(x = "Wind speed (m/s)",
+       y = "Atmospheric conductance (mm/s)",
+       title = "Wind speed and scalar for roughness effect on atmospheric conductance ",
+       color = "Scalar for roughness, k_o") + 
   theme_minimal()
 
-ggplot(both, aes(v, gs, col = k_d)) +
+ggplot(both, aes(x = k_o, gs, col = v)) +
   geom_point() + 
-  theme_minimal()
+  labs(x = "Scalar for roughness, k_o",
+       y = "Atmospheric conductance (mm/s)",
+       title = "Scalar for roughness and wind speed effect on atmospheric conductance",
+       color = "Wind speed (m/s)") + 
+    theme_minimal() 
 ```
 
