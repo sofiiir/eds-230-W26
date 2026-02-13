@@ -54,6 +54,7 @@ Try running the diffusion model with different time steps, space steps and param
 
 ```{r, alternativediffusion}
 # what if we increase diffusivity
+# creates numerical overshoot
 resfast <- diff1(initialC = 100, nx = 10, dx = 0.5, nt = 10, dt = 10, D = 0.08, area = 1)
 filled.contour(resfast$conc, xlab = "Time", ylab = "Distance", main = "Concentration through time and space")
 filled.contour(resfast$qin, xlab = "Time", ylab = "Distance", main = "Qin")
