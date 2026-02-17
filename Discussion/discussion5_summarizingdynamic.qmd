@@ -97,12 +97,6 @@ In class we've talking about summarizing results from dynamic models
 
 -   looking at spatial variation for multiple points in time
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
-library(here)
-```
-
 ## Extracting from our diffusion model {.scrollable}
 
 ```{r}
@@ -129,7 +123,7 @@ Lets say this was a pollutant injected into a stream...
 
 # graph a single point in space through time
 # single column (time)
-plot(resfast_fixtime$conc[, 3], ylab = "Conc. at 2 spatial units from origin (1+2)", xlab = "time step")
+plot(resfast_fixtime$conc[, 8], ylab = "Conc. at 2 spatial units from origin (1+2)", xlab = "time step")
 ```
 
 -   what if we were concerned about all locations
