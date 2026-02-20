@@ -160,7 +160,7 @@ compute_pop_metrics <- function(result, thresh) {
   # first add maximum population
   maxpop <- max(result$P)
   
-  # find when populatin is greater than the threshold
+  # find when population is greater than the threshold
   idx <- which(result$P > thresh)[1]
   # account for sitation with threshold is never reached
   idx <- ifelse(is.na(idx), length(result$P), idx)

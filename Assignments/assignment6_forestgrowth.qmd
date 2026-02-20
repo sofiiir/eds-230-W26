@@ -1,0 +1,53 @@
+---
+title: "assignment6_forestgrowth"
+format: html
+date: February 24, 2026
+name: Sofia Rodas
+message: false
+warning: false
+---
+
+# Sensitivity Analysis of a Differential Equation
+```{r}
+library(tidyverse)
+library(deSolve)
+library(here)
+library(sensitivity)
+```
+
+## Run the model for 300 years (using the ODE solver) starting with an initial forest size of 10 kg/C,
+and using the following parameters
+```{r}
+# source our function
+source(here("R/forest_growth.R"))
+
+# parms value setting
+K <- 250 
+r <- 0.01
+g <- 2 
+
+forest_growth <- cbind.data.frame(r = r, K = K, g = g) 
+
+# initial forest setting
+initial_forest <- 10
+
+# create a time sequence
+tm <- seq(from = 1, to = 300)
+
+# watch it grow
+forest <- ode(y = initial_forest, times = tm, forestgrowth, parms = forest_growth)
+
+# rename the column names
+colnames(forest) <- c("time", "dC")
+```
+
+Graph the results
+```{r}
+# graph the results of forest growth
+ggplot(as.data.frame(forest), aes(time, dC)) +
+  geom_line(color = "hotpink") + 
+  theme_minimal() +
+  labs(title = "Forest growth change over time",
+        y = "Change in growth (kgC)")
+```
+
