@@ -1,4 +1,4 @@
-#'  Logistic population growth derivative
+#'  Logistic forest growth derivative
 #' @param time time since start
 #' @param C Canopy closure threshold and carrying capacity
 #' @param parms - as list with two values, r, K, g
