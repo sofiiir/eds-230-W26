@@ -100,6 +100,35 @@ colnames(sens_forest_size$X) <- c("r", "K", "g")
 
 head(sens_forest_size$X)
 ```
+```{r}
+# turn computing our metrics into a function
+compute_pop_metrics <- function(result) {
+  # first add maximum population
+  maxgrowth <- max(result$P)
+  
+  # return results
+  return(list(maxgrowth = maxgrowth))
+}
+
+# Test that it works
+# try it on our first parameter set, and look at when it gets to 100
+# initial population
+initial_forest <- 10
+
+# run for year = 300
+simtimes <-  300
+
+# use the first parameter set (or you could just pick a test value), not the list because ode wants parameters as a list, so name each
+parmtest <- list(r = sens_forest_size$X[1,"r"], 
+                 K = sens_forest_size$X[1,"K"], 
+                 g = sens_forest_size$X[1,"g"])
+
+# run ode
+result = ode(y = initial_forest, times = simtimes, func = forestgrowth, parms = parmtest)
+# turn ode results into a labelled data frame 
+result = data.frame(time=result[,1], P=result[,2])
+```
+Need to run this without the wrapper to see why this isn't working
 ### Make a wrapper function to run a Sobol test 
 ```{r}
 # define a wrapper function to do everything we need - run solver and compute metrics - and send back results for each parameter
@@ -108,7 +137,7 @@ head(sens_forest_size$X)
 p_wrapper <- function(r, K, g, initial_forest, simtimes, odefunc, metricfunc) {
   
   # create parameter list
-  parms <- list(r = r, K = K)
+  parms <- list(r = r, K = K, g = g)
   
   # run ode
   result <- ode(y = initial_forest, times = simtimes, func = odefunc, parms = parms, method="euler")
@@ -123,23 +152,14 @@ p_wrapper <- function(r, K, g, initial_forest, simtimes, odefunc, metricfunc) {
 }
 ```
 
-```{r}
-# turn computing our metrics into a function
-compute_pop_metrics <- function(result) {
-  # first add maximum population
-  maxgrowth <- max(result$P)
-  
-  # return results
-  return(list(maxgrowth = maxgrowth))
-}
-```
+
 
 ```{r}
 # test with specific r and K values (r=0.01, K=150)
 # set out threshold 
 p_wrapper(
   r = 0.01, K = 250, g = 2, initial_forest = 10, simtimes = 300,
-  odefunc = forestgrowth, metricfunc = compute_pop_metrics
+ odefunc = forestgrowth, metricfunc = compute_pop_metrics
 )
 
 ```
