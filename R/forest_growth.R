@@ -1,6 +1,6 @@
 #'  Logistic forest growth derivative
 #' @param time time since start
-#' @param C Canopy closure threshold and carrying capacity
+#' @param C Canopy closure threshold 
 #' @param parms - as list with two values, r, K, g
 #' @param r intrinsic growth rate
 #' @param K carrying capacity (kg C)

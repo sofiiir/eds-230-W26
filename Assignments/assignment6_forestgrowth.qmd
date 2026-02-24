@@ -68,7 +68,10 @@ r <- rnorm(mean = 0.01, sd = 0.001, n = np)
 # sample g with mean of 2 and standard deviation of 0.2
 g <- rnorm(mean = 2, sd = 0.2, n = np)
 
-X1 <- cbind.data.frame(r = r, K = K, g = g)
+# sample thresh with mean of 50 and standard deviation of 5
+thresh <- rnorm(mean = 50, sd = 5, n = np)
+
+X1 <- cbind.data.frame(r = r, K = K, g = g, thresh = thresh)
 
 # Assume parameters are normally distributed
 # sample K with mean of 200, standard devidation of  50
@@ -80,7 +83,10 @@ r2 <- rnorm(mean = 0.01, sd = 0.001, n = np)
 # sample g with mean of 2 and standard deviation of 0.2
 g2 <- rnorm(mean = 2, sd = 0.2, n = np)
 
-X2 <- cbind.data.frame(r = r, K = K, g = g)
+# sample thresh with mean of 50 and standard deviation of 5
+thresh2 <- rnorm(mean = 50, sd = 5, n = np)
+
+X2 <- cbind.data.frame(r = r2, K = K2, g = g2, thresh = thresh2)
 
 # fix any negative values and they are not meaningful
 X1 <- X1 |>  
@@ -96,7 +102,7 @@ sens_forest_size <- sobolSalt(model = NULL, X1, X2, nboot = 300)
 head(sens_forest_size$X)
 
 # lets add names
-colnames(sens_forest_size$X) <- c("r", "K", "g")
+colnames(sens_forest_size$X) <- c("r", "K", "g", "thresh")
 
 head(sens_forest_size$X)
 ```
@@ -116,17 +122,19 @@ compute_pop_metrics <- function(result) {
 initial_forest <- 10
 
 # run for year = 300
-simtimes <-  300
+simtimes <-  seq(from = 1, to = 300)
 
 # use the first parameter set (or you could just pick a test value), not the list because ode wants parameters as a list, so name each
 parmtest <- list(r = sens_forest_size$X[1,"r"], 
                  K = sens_forest_size$X[1,"K"], 
-                 g = sens_forest_size$X[1,"g"])
+                 g = sens_forest_size$X[1,"g"],
+                 thresh = sens_forest_size$X[1, "thresh"])
 
 # run ode
 result = ode(y = initial_forest, times = simtimes, func = forestgrowth, parms = parmtest)
+
 # turn ode results into a labelled data frame 
-result = data.frame(time=result[,1], P=result[,2])
+result = data.frame(time=result[,1], C=result[,2])
 ```
 Need to run this without the wrapper to see why this isn't working
 ### Make a wrapper function to run a Sobol test 
@@ -134,10 +142,10 @@ Need to run this without the wrapper to see why this isn't working
 # define a wrapper function to do everything we need - run solver and compute metrics - and send back results for each parameter
 
 # lets make the threshold 90% of carrying capacity
-p_wrapper <- function(r, K, g, initial_forest, simtimes, odefunc, metricfunc) {
+p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metricfunc) {
   
   # create parameter list
-  parms <- list(r = r, K = K, g = g)
+  parms <- list(r = r, K = K, g = g, thresh = thresh)
   
   # run ode
   result <- ode(y = initial_forest, times = simtimes, func = odefunc, parms = parms, method="euler")
@@ -158,7 +166,7 @@ p_wrapper <- function(r, K, g, initial_forest, simtimes, odefunc, metricfunc) {
 # test with specific r and K values (r=0.01, K=150)
 # set out threshold 
 p_wrapper(
-  r = 0.01, K = 250, g = 2, initial_forest = 10, simtimes = 300,
+  r = 0.01, K = 250, g = 2, thresh = 50, initial_forest = 10, simtimes = 300,
  odefunc = forestgrowth, metricfunc = compute_pop_metrics
 )
 
