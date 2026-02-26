@@ -9,6 +9,9 @@ warning: false
 
 # Sensitivity Analysis of a Differential Equation
 ```{r}
+#| message: false
+#| warning: false
+
 library(tidyverse)
 library(deSolve)
 library(here)
@@ -108,12 +111,19 @@ head(sens_forest_size$X)
 ```
 ```{r}
 # turn computing our metrics into a function
-compute_pop_metrics <- function(result) {
+compute_pop_metrics <- function(result, thresh) {
   # first add maximum population
-  maxgrowth <- max(result$P)
+  maxgrowth <- max(result$C)
+  
+  # find when population is greater than the threshold
+  idx <- which(result$C > thresh)[1]
+  
+  # account for sitation with threshold is never reached
+  idx <- ifelse(is.na(idx), length(result$C), idx)
+  threshyear <- result$time[idx]
   
   # return results
-  return(list(maxgrowth = maxgrowth))
+  return(list(maxgrowth = maxgrowth, threshyear = threshyear))
 }
 
 # Test that it works
@@ -142,7 +152,7 @@ Need to run this without the wrapper to see why this isn't working
 # define a wrapper function to do everything we need - run solver and compute metrics - and send back results for each parameter
 
 # lets make the threshold 90% of carrying capacity
-p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metricfunc) {
+p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metricfunc, metricpars) {
   
   # create parameter list
   parms <- list(r = r, K = K, g = g, thresh = thresh)
@@ -151,11 +161,11 @@ p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metric
   result <- ode(y = initial_forest, times = simtimes, func = odefunc, parms = parms, method="euler")
   
   # results as a data frame
-  result = data.frame(time=result[,1], P=result[,2])
+  result = data.frame(time=result[,1], C=result[,2])
   # get metrics
   
   # compute metrics
-  metrics <- metricfunc(as.data.frame(result))
+  metrics <- metricfunc(as.data.frame(result), metricpars$thresh)
   return(metrics)
 }
 ```
@@ -165,10 +175,16 @@ p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metric
 ```{r}
 # test with specific r and K values (r=0.01, K=150)
 # set out threshold 
-p_wrapper(
-  r = 0.01, K = 250, g = 2, thresh = 50, initial_forest = 10, simtimes = 300,
- odefunc = forestgrowth, metricfunc = compute_pop_metrics
-)
+metricpars = list(thresh=50)
+p_wrapper(r = 0.01, 
+          K = 250, 
+          g = 2, 
+          thresh = 50, 
+          initial_forest = 10, 
+          simtimes = simtimes,
+          odefunc = forestgrowth, 
+          metricfunc = compute_pop_metrics,
+          metricpars = metricpars)
 
 ```
 
