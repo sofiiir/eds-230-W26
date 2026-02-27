@@ -16,6 +16,7 @@ library(tidyverse)
 library(deSolve)
 library(here)
 library(sensitivity)
+set.seed(98)
 ```
 
 ## Run the model for 300 years (using the ODE solver) starting with an initial forest size of 10 kg/C,
@@ -71,8 +72,10 @@ r <- rnorm(mean = 0.01, sd = 0.001, n = np)
 # sample g with mean of 2 and standard deviation of 0.2
 g <- rnorm(mean = 2, sd = 0.2, n = np)
 
-X1 <- cbind.data.frame(r = r, K = K, g = g)
+# sample thresh with mean of 50 and standard deviation of 5
+thresh <- rnorm(mean = 50, sd = 5, n = np)
 
+X1 <- cbind.data.frame(r = r, K = K, g = g, thresh = thresh)
 
 # Assume parameters are normally distributed
 # sample K with mean of 200, standard devidation of  50
@@ -84,8 +87,10 @@ r2 <- rnorm(mean = 0.01, sd = 0.001, n = np)
 # sample g with mean of 2 and standard deviation of 0.2
 g2 <- rnorm(mean = 2, sd = 0.2, n = np)
 
-X2 <- cbind.data.frame(r = r2, K = K2, g = g2)
+# sample thresh with mean of 50 and standard deviation of 5
+thresh2 <- rnorm(mean = 50, sd = 5, n = np)
 
+X2 <- cbind.data.frame(r = r2, K = K2, g = g2, thresh = thresh2)
 
 # fix any negative values and they are not meaningful
 X1 <- X1 |>  
@@ -94,7 +99,6 @@ X1 <- X1 |>
 X2 <- X2 |>  
   map_df(pmax, 0.0)
 
-
 # create our sobel object and get sets of parameters for running the model
 sens_forest_size <- sobolSalt(model = NULL, X1, X2, nboot = 300)
 
@@ -102,7 +106,7 @@ sens_forest_size <- sobolSalt(model = NULL, X1, X2, nboot = 300)
 head(sens_forest_size$X)
 
 # lets add names
-colnames(sens_forest_size$X) <- c("r", "K", "g")
+colnames(sens_forest_size$X) <- c("r", "K", "g", "thresh")
 
 head(sens_forest_size$X)
 ```
@@ -126,7 +130,8 @@ simtimes <-  seq(from = 1, to = 300)
 # use the first parameter set for the ode function 
 parmtest <- list(r = sens_forest_size$X[1,"r"], 
                  K = sens_forest_size$X[1,"K"], 
-                 g = sens_forest_size$X[1,"g"])
+                 g = sens_forest_size$X[1,"g"],
+                 thresh = sens_forest_size$X[1, "thresh"])
 
 # run ode
 result <- ode(y = initial_forest, 
@@ -141,10 +146,10 @@ result <- data.frame(time=result[,1], C=result[,2])
 ### Make a wrapper function to run a Sobol test 
 ```{r}
 # define a wrapper function to do everything we need - run solver and compute metrics - and send back results 
-p_wrapper <- function(r, K, g, initial_forest, simtimes, odefunc, metricfunc) {
+p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metricfunc) {
   
   # create parameter list
-  parms <- list(r = r, K = K, g = g)
+  parms <- list(r = r, K = K, g = g, thresh = thresh)
   
   # run ode
   result <- ode(y = initial_forest, times = simtimes, func = odefunc, parms = parms, method="euler")
@@ -165,10 +170,10 @@ p_wrapper <- function(r, K, g, initial_forest, simtimes, odefunc, metricfunc) {
 # test with specific r and K values (r=0.01, K=250)
 # set the threshold 
 metricpars = list(thresh=50)
-result <- p_wrapper(
-          r = 0.01, 
+result <- p_wrapper(r = 0.01, 
           K = 250, 
-          g = 2,
+          g = 2, 
+          thresh = 50, 
           initial_forest = 10, 
           simtimes = simtimes,
           odefunc = forestgrowth,
@@ -183,6 +188,7 @@ result
 p_wrapper(r = sens_forest_size$X[1,"r"],
           K = sens_forest_size$X[1,"K"],
           g = sens_forest_size$X[1,"g"],
+          thresh = sens_forest_size$X[1,"thresh"],
           initial_forest = initial_forest,
           simtimes = simtimes,
           odefunc = forestgrowth,
@@ -218,21 +224,21 @@ ggplot(allres, aes(y = maxgrowth))+
 sens_C_maxgrowth <- sensitivity::tell(sens_forest_size, allres$maxgrowth)
 
 # first-order indices (main effect without co-variance)
-rownames(sens_C_maxgrowth$S) <- c("r", "K", "g")
+rownames(sens_C_maxgrowth$S) <- c("r", "K", "g", "thresh")
 sens_C_maxgrowth$S
 
 # total sensitivity index -note that this partitions the output variance - so values sum to 1
-rownames(sens_C_maxgrowth$T) <- c("r", "K", "g")
+rownames(sens_C_maxgrowth$T) <- c("r", "K", "g", "thresh")
 sens_C_maxgrowth$T
 
-# graph metric against most parameter that the output is most sensitive to, using second most sensitive for color
+# graph metric against most parameter that the output is most sensitive to, using #2 for color
 # create a data frame
 allresp = as.data.frame(cbind(sens_forest_size$X, allres))
-ggplot(allresp, aes(r, maxgrowth, col=K)) +
+ggplot(allresp, aes(r, maxgrowth, col=K )) +
   geom_point() +
   labs(y="Maximum growth", 
        x="r",
-       title = "Maximum forest growth sensitivity test") +
+       title = "Maximum forest growth (dC) by sensitivity test") +
   theme_minimal()
 ```
 
