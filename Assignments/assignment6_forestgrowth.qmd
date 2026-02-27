@@ -44,7 +44,7 @@ forest <- ode(y = initial_forest, times = tm, forestgrowth, parms = forest_growt
 colnames(forest) <- c("time", "dC")
 ```
 
-Graph the results. Here you are graphing the trajectory with the parameters as given (e.g no
+## Graph the results. Here you are graphing the trajectory with the parameters as given (e.g no
 uncertainty)
 ```{r}
 # graph the results of forest growth
@@ -55,7 +55,7 @@ ggplot(as.data.frame(forest), aes(time, dC)) +
         y = "Change in growth (kgC)")
 ```
 
-Run a sobol global (vary all parameters at the same time) sensitivity analysis that explores how the
+## Run a sobol global (vary all parameters at the same time) sensitivity analysis that explores how the
 estimated maximum forest size (e.g maximum of 300 years) varies with these parameters
 ```{r}
 # set the number of parameters
@@ -119,32 +119,32 @@ compute_pop_metrics <- function(result) {
   return(list(maxgrowth = maxgrowth))
 }
 
-# Test that it works
-# try it on our first parameter set, and look at when it gets to 100
+# test that the metrics computing function works works
 # initial population
 initial_forest <- 10
 
 # run for year = 300
 simtimes <-  seq(from = 1, to = 300)
 
-# use the first parameter set (or you could just pick a test value), not the list because ode wants parameters as a list, so name each
+# use the first parameter set for the ode function 
 parmtest <- list(r = sens_forest_size$X[1,"r"], 
                  K = sens_forest_size$X[1,"K"], 
                  g = sens_forest_size$X[1,"g"],
                  thresh = sens_forest_size$X[1, "thresh"])
 
 # run ode
-result <- ode(y = initial_forest, times = simtimes, func = forestgrowth, parms = parmtest)
+result <- ode(y = initial_forest, 
+              times = simtimes, 
+              func = forestgrowth, 
+              parms = parmtest)
 
 # turn ode results into a labelled data frame 
 result <- data.frame(time=result[,1], C=result[,2])
 ```
-Need to run this without the wrapper to see why this isn't working
+
 ### Make a wrapper function to run a Sobol test 
 ```{r}
-# define a wrapper function to do everything we need - run solver and compute metrics - and send back results for each parameter
-
-# lets make the threshold 90% of carrying capacity
+# define a wrapper function to do everything we need - run solver and compute metrics - and send back results 
 p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metricfunc) {
   
   # create parameter list
@@ -156,8 +156,9 @@ p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metric
   # results as a data frame
   result <- data.frame(time=result[,1], C=result[,2])
   
- # compute metrics
+  # compute metrics
    metrics <- metricfunc(as.data.frame(result))
+   
   return(metrics)
 }
 ```
@@ -165,10 +166,10 @@ p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metric
 
 
 ```{r}
-# test with specific r and K values (r=0.01, K=150)
-# set out threshold 
+# test with specific r and K values (r=0.01, K=250)
+# set the threshold 
 metricpars = list(thresh=50)
-result <- p_wrapper(r = sens_forest_size$X['r'], 
+result <- p_wrapper(r = 0.01, 
           K = 250, 
           g = 2, 
           thresh = 50, 
@@ -195,19 +196,51 @@ p_wrapper(r = sens_forest_size$X[1,"r"],
 
 
 ```{r}
-
+# run the wrapper function over the 
 allresults <- as.data.frame(sens_forest_size$X)  |>  pmap(p_wrapper,
                                                           initial_forest = initial_forest,
                                                           simtimes = simtimes,
                                                           odefunc = forestgrowth,
                                                           metricfunc = compute_pop_metrics)
 
-# extract out results from pmap into a data frame
+# extract  results from pmap into a data frame
 allres <- allresults |>  map_dfr(`[`, c("maxgrowth"))
 ```
 
+## Graph the results of the sensitivity analysis as a box plot of maximum forest size
 ```{r}
-ggplot(allres, aes(x = maxgrowth))+ 
-  geom_boxplot()
+ggplot(allres, aes(y = maxgrowth))+ 
+  geom_boxplot() + 
+  theme_minimal() + 
+  labs(title = "Maximum Forest Size") +
+  theme(axis.text.x = element_blank())
 ```
+
+## Record the two Sobol indices (S and T)
+
+```{r}
+# "tell" the sensitivity analysis object - re-name so we keep separate
+sens_C_maxgrowth <- sensitivity::tell(sens_forest_size, allres$maxgrowth)
+
+# first-order indices (main effect without co-variance)
+rownames(sens_C_maxgrowth$S) <- c("r", "K", "g", "thresh")
+sens_C_maxgrowth$S
+
+# total sensitivity index -note that this partitions the output variance - so values sum to 1
+rownames(sens_C_maxgrowth$T) <- c("r", "K", "g", "thresh")
+sens_C_maxgrowth$T
+
+# graph metric against most parameter that the output is most sensitive to, using #2 for color
+# create a data frame
+allresp = as.data.frame(cbind(sens_forest_size$X, allres))
+ggplot(allresp, aes(K, maxgrowth, col=g )) +
+  geom_point() +
+  labs(y="Maximum growth", x="K")
+```
+
+### In 2-3 sentences, discuss what the results of your simulation might mean. (For example think about
+what parameters climate change might influence)
+
+Based on the Sobol sensitivity analysis for our forest growth model, the maximum forest growth is most sensitive to the carrying capacity followed by the linear growth rate  after canopy closure both in the first order indices and total order indices. Climate change could change this by altering the growth rate before and after canopy closure and could change the model's greatest sensitivity. 
+
 
