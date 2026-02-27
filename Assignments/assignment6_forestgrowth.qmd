@@ -1,7 +1,7 @@
 ---
-title: "assignment6_forestgrowth"
+title: "Assignment 6: Forest growth"
 format: html
-date: February 24, 2026
+date: February 27, 2026
 name: Sofia Rodas
 message: false
 warning: false
@@ -19,8 +19,7 @@ library(sensitivity)
 set.seed(230)
 ```
 
-## Run the model for 300 years (using the ODE solver) starting with an initial forest size of 10 kg/C,
-and using the following parameters
+## Run the model for 300 years (using the ODE solver) starting with an initial forest size of 10 kg/C, and using the following parameters
 ```{r}
 # source our function
 source(here("R/forest_growth.R"))
@@ -45,19 +44,18 @@ forest <- ode(y = initial_forest, times = tm, forestgrowth, parms = forest_growt
 colnames(forest) <- c("time", "dC")
 ```
 
-## Graph the results. Here you are graphing the trajectory with the parameters as given (e.g no
-uncertainty)
+## Graph the results. Here you are graphing the trajectory with the parameters as given (e.g no uncertainty)
 ```{r}
 # graph the results of forest growth
 ggplot(as.data.frame(forest), aes(time, dC)) +
   geom_line(color = "hotpink") + 
   theme_minimal() +
   labs(title = "Forest growth change over time",
-        y = "Change in growth (kgC)")
+       subtitle = "Change overtime when canopy closure, carrying capacity,\n and growth rates of canopy closure are held constant",
+        y = "Change in growth (C)")
 ```
 
-## Run a sobol global (vary all parameters at the same time) sensitivity analysis that explores how the
-estimated maximum forest size (e.g maximum of 300 years) varies with these parameters
+## Run a sobol global (vary all parameters at the same time) sensitivity analysis that explores how the estimated maximum forest size (e.g maximum of 300 years) varies with these parameters
 ```{r}
 # set the number of parameters
 np <- 2000
@@ -110,6 +108,7 @@ colnames(sens_forest_size$X) <- c("r", "K", "g", "thresh")
 
 head(sens_forest_size$X)
 ```
+Since we are only interested in the maximum amount of growth our metric output function will only  output the maximum growth. Code the metric output function and ensure that it works with the first row of the parameters. 
 ```{r}
 # turn computing our metrics into a function
 compute_pop_metrics <- function(result) {
@@ -165,9 +164,9 @@ p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metric
 ```
 
 
-
+Test the wrapper function with specific r, g, and K values (r=0.01, K=250, g = 2).
 ```{r}
-# test with specific r and K values (r=0.01, K=250)
+# 
 # set the threshold 
 metricpars = list(thresh=50)
 result <- p_wrapper(r = 0.01, 
@@ -183,6 +182,7 @@ result <- p_wrapper(r = 0.01,
 result
 ```
 
+Try the wrapper function with the first row of the varied parameters.  
 ```{r}
 # try with first row of our Sobol parameters
 p_wrapper(r = sens_forest_size$X[1,"r"],
@@ -195,9 +195,8 @@ p_wrapper(r = sens_forest_size$X[1,"r"],
           metricfunc = compute_pop_metrics)
 ```
 
-
+Run the wrapper function with the entirety of the varied parameters. 
 ```{r}
-# run the wrapper function over the 
 allresults <- as.data.frame(sens_forest_size$X)  |>  pmap(p_wrapper,
                                                           initial_forest = initial_forest,
                                                           simtimes = simtimes,
@@ -213,7 +212,8 @@ allres <- allresults |>  map_dfr(`[`, c("maxgrowth"))
 ggplot(allres, aes(y = maxgrowth))+ 
   geom_boxplot() + 
   theme_minimal() + 
-  labs(title = "Maximum Forest Growth (dC) ") +
+  labs(title = "Maximum Forest Size (C)",
+       y = "Max size (C)") +
   theme(axis.text.x = element_blank())
 ```
 
@@ -238,13 +238,12 @@ ggplot(allresp, aes(r, maxgrowth, col=K )) +
   geom_point() +
   labs(y="Maximum growth", 
        x="r",
-       title = "Maximum forest growth (dC) by sensitivity test") +
+       title = "Maximum forest growth (dC) ") +
   theme_minimal()
 ```
 
-### In 2-3 sentences, discuss what the results of your simulation might mean. (For example think about
-what parameters climate change might influence)
+### In 2-3 sentences, discuss what the results of your simulation might mean. (For example think about what parameters climate change might influence)
 
-Based on the Sobol sensitivity analysis for our forest growth model, the maximum forest growth is most sensitive to the carrying capacity followed by the linear growth rate  after canopy closure both in the first order indices and total order indices. Climate change could change this by altering the growth rate before and after canopy closure and could change the model's greatest sensitivity. 
+Based on the Sobol sensitivity analysis for our forest growth model, the maximum forest growth is most sensitive to the exponential growth rate before before canopy closure, `r`, followed by the carrying capacity both in the first order indices and total order indices. Climate change could change this by altering the growth rate before and after canopy closure and could change the model's greatest sensitivity. 
 
 
