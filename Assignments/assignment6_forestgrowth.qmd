@@ -16,7 +16,7 @@ library(tidyverse)
 library(deSolve)
 library(here)
 library(sensitivity)
-set.seed(98)
+set.seed(230)
 ```
 
 ## Run the model for 300 years (using the ODE solver) starting with an initial forest size of 10 kg/C,
