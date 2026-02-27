@@ -213,7 +213,7 @@ allres <- allresults |>  map_dfr(`[`, c("maxgrowth"))
 ggplot(allres, aes(y = maxgrowth))+ 
   geom_boxplot() + 
   theme_minimal() + 
-  labs(title = "Maximum Forest Size") +
+  labs(title = "Maximum Forest Growth (dC) ") +
   theme(axis.text.x = element_blank())
 ```
 
