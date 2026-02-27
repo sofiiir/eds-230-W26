@@ -111,19 +111,12 @@ head(sens_forest_size$X)
 ```
 ```{r}
 # turn computing our metrics into a function
-compute_pop_metrics <- function(result, thresh) {
+compute_pop_metrics <- function(result) {
   # first add maximum population
   maxgrowth <- max(result$C)
-  
-  # find when population is greater than the threshold
-  idx <- which(result$C > thresh)[1]
-  
-  # account for sitation with threshold is never reached
-  idx <- ifelse(is.na(idx), length(result$C), idx)
-  threshyear <- result$time[idx]
-  
+
   # return results
-  return(list(maxgrowth = maxgrowth, threshyear = threshyear))
+  return(list(maxgrowth = maxgrowth))
 }
 
 # Test that it works
@@ -141,10 +134,10 @@ parmtest <- list(r = sens_forest_size$X[1,"r"],
                  thresh = sens_forest_size$X[1, "thresh"])
 
 # run ode
-result = ode(y = initial_forest, times = simtimes, func = forestgrowth, parms = parmtest)
+result <- ode(y = initial_forest, times = simtimes, func = forestgrowth, parms = parmtest)
 
 # turn ode results into a labelled data frame 
-result = data.frame(time=result[,1], C=result[,2])
+result <- data.frame(time=result[,1], C=result[,2])
 ```
 Need to run this without the wrapper to see why this isn't working
 ### Make a wrapper function to run a Sobol test 
@@ -152,7 +145,7 @@ Need to run this without the wrapper to see why this isn't working
 # define a wrapper function to do everything we need - run solver and compute metrics - and send back results for each parameter
 
 # lets make the threshold 90% of carrying capacity
-p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metricfunc, metricpars) {
+p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metricfunc) {
   
   # create parameter list
   parms <- list(r = r, K = K, g = g, thresh = thresh)
@@ -161,11 +154,10 @@ p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metric
   result <- ode(y = initial_forest, times = simtimes, func = odefunc, parms = parms, method="euler")
   
   # results as a data frame
-  result = data.frame(time=result[,1], C=result[,2])
-  # get metrics
+  result <- data.frame(time=result[,1], C=result[,2])
   
-  # compute metrics
-  metrics <- metricfunc(as.data.frame(result), metricpars$thresh)
+ # compute metrics
+   metrics <- metricfunc(as.data.frame(result))
   return(metrics)
 }
 ```
@@ -176,15 +168,46 @@ p_wrapper <- function(r, K, g, thresh, initial_forest, simtimes, odefunc, metric
 # test with specific r and K values (r=0.01, K=150)
 # set out threshold 
 metricpars = list(thresh=50)
-p_wrapper(r = 0.01, 
+result <- p_wrapper(r = sens_forest_size$X['r'], 
           K = 250, 
           g = 2, 
           thresh = 50, 
           initial_forest = 10, 
           simtimes = simtimes,
-          odefunc = forestgrowth, 
-          metricfunc = compute_pop_metrics,
-          metricpars = metricpars)
+          odefunc = forestgrowth,
+          metricfunc = compute_pop_metrics
+          )
 
+result
+```
+
+```{r}
+# try with first row of our Sobol parameters
+p_wrapper(r = sens_forest_size$X[1,"r"],
+          K = sens_forest_size$X[1,"K"],
+          g = sens_forest_size$X[1,"g"],
+          thresh = sens_forest_size$X[1,"thresh"],
+          initial_forest = initial_forest,
+          simtimes = simtimes,
+          odefunc = forestgrowth,
+          metricfunc = compute_pop_metrics)
+```
+
+
+```{r}
+
+allresults <- as.data.frame(sens_forest_size$X)  |>  pmap(p_wrapper,
+                                                          initial_forest = initial_forest,
+                                                          simtimes = simtimes,
+                                                          odefunc = forestgrowth,
+                                                          metricfunc = compute_pop_metrics)
+
+# extract out results from pmap into a data frame
+allres <- allresults |>  map_dfr(`[`, c("maxgrowth"))
+```
+
+```{r}
+ggplot(allres, aes(x = maxgrowth))+ 
+  geom_boxplot()
 ```
 
