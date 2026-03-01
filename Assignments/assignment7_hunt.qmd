@@ -1,0 +1,46 @@
+---
+title: "Assignment 7 - Two Variables ODE"
+format: html
+author: Sofia Rodas
+date: March 10, 2026
+message: false
+warning: false
+---
+
+```{r}
+# load necessary libraries
+library(sensitivity)
+library(tidyverse)
+library(deSolve)
+library(lhs)
+library(here)
+library(ggpubr)
+```
+
+Load in Lotka Voltera Model with the hunting parameter.
+```{r}
+source(here("R/lotvmodK_hunt.R"))
+lotvmodK_hunt
+```
+Run the function with ODE function. 
+```{r}
+# initial conditions
+currpop <- c(prey = 1000, pred = 50)
+
+# time points to see results
+days <- seq(from = 1, to = 100, by = 1)
+
+
+# set parameters
+pars <- c(rprey = 0.5, 
+          alpha = 0.3, 
+          eff = 0.2, 
+          pmort = 0.2, 
+          K = 100, 
+          pred_thresh = 50, 
+          hunt = 0.1)
+
+# run the model
+res <- ode(func = lotvmodK_hunt, y = currpop, times = days, parms = pars)
+```
+
