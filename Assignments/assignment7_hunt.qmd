@@ -28,7 +28,7 @@ Run the function with ODE function.
 currpop <- c(prey = 1000, pred = 50)
 
 # time points to see results
-days <- seq(from = 1, to = 100, by = 1)
+days <- seq(from = 1, to = 1000, by = 1)
 
 
 # set parameters
@@ -41,6 +41,10 @@ pars <- c(rprey = 0.5,
           hunt = 0.1)
 
 # run the model
-res <- ode(func = lotvmodK_hunt, y = currpop, times = days, parms = pars)
+res <- ode(func = lotvmodK_hunt, 
+           y = currpop, 
+           times = days, 
+           parms = pars,
+           method = "euler")
 ```
 
