@@ -48,3 +48,5 @@ res <- ode(func = lotvmodK_hunt,
            method = "euler")
 ```
 
+
+
