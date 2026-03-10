@@ -17,36 +17,199 @@ library(here)
 library(ggpubr)
 ```
 
-Load in Lotka Voltera Model with the hunting parameter.
+Source the Lotka Voltera Model without the hunting parameter.
 ```{r}
-source(here("R/lotvmodK_hunt.R"))
-lotvmodK_hunt
+source(here("R/lotvmodK.R"))
+lotvmodK
 ```
-Run the function with ODE function. 
+Run the function without hunt.
 ```{r}
 # initial conditions
-currpop <- c(prey = 1000, pred = 50)
+currpop <- c(prey = 40, pred = 1)
 
 # time points to see results
 days <- seq(from = 1, to = 1000, by = 1)
 
 
 # set parameters
-pars <- c(rprey = 0.5, 
-          alpha = 0.3, 
-          eff = 0.2, 
-          pmort = 0.2, 
-          K = 100, 
-          pred_thresh = 50, 
-          hunt = 0.1)
+pars <- c(rprey = 0.95, 
+          alpha = 0.01, 
+          eff = 0.6, 
+          pmort = 0.4, 
+          K = 2000, 
+          pred_thresh = 50)
+
+# run the model
+res <- ode(func = lotvmodK, 
+           y = currpop, 
+           times = days, 
+           parms = pars)
+```
+
+```{r}
+# graph the results
+head(res)
+
+# rearrange for easy plotting
+resl <- as.data.frame(res) |> 
+  pivot_longer(-time, names_to = "animal", values_to = "pop")
+
+p1 <- ggplot(resl, 
+             aes(time, 
+                 pop, 
+                 col = animal)) +
+  geom_line()
+
+p1
+```
+Source the Lotka Voltera Model with the hunting parameter.
+```{r}
+source(here("R/lotvmodK_hunt.R"))
+lotvmodK_hunt
+```
+
+Run the function with ODE function. 
+```{r}
+# initial conditions
+currpop <- c(prey = 40, pred = 1)
+
+# time points to see results
+days <- seq(from = 1, to = 1000, by = 1)
+
+# set parameters
+pars <- c(rprey = 0.95, 
+          alpha = 0.01, 
+          eff = 0.6, 
+          pmort = 0.4, 
+          K = 2000,
+          rhunt = 0.4,
+          prey_thresh = 200)
+
+problem <- lotvmodK_hunt(t = 0, pop = currpop, pars = pars)
+problem
 
 # run the model
 res <- ode(func = lotvmodK_hunt, 
            y = currpop, 
            times = days, 
-           parms = pars,
-           method = "euler")
+           parms = pars)
 ```
 
+```{r}
+# graph the results
+head(res)
+
+# rearrange for easy plotting
+resl <- as.data.frame(res) |> 
+  pivot_longer(-time, names_to = "animal", values_to = "pop")
+
+p1 <- ggplot(resl, 
+             aes(time, 
+                 pop, 
+                 col = animal)) +
+  geom_line()
+
+p1
+```
+
+# Run a sobol global (vary all parameters at the same time) sensitivity analysis that explores how the estimated populations vary with these parameters
+```{r}
+# set the number of parameters
+np <- 2000
+
+# Assume parameters are normally distributed
+K <- rnorm(mean = 2000, sd = 25, n = np)
+rprey <- rnorm(mean = 0.95, sd = 0.05, n = np)
+alpha <- rnorm(mean = 0.01, sd = 0.001, n = np)
+eff <- rnorm(mean = 0.6, sd = 0.1, n = np)
+pmort <- rnorm(mean = 0.4, sd = 0.1, n = np)
+rhunt <- rnorm(mean = 0.5, sd = 0.1, n = np)
+prey_thresh <- rnorm(mean = 150, sd = 20, n = np)
+
+X1 <- cbind.data.frame(K=K,
+                       rprey = rprey,
+                       alpha = alpha,
+                       eff = eff,
+                       pmort = pmort,
+                       rhunt = rhunt,
+                       prey_thresh = prey_thresh)
+
+# set the number of parameters
+np <- 2000
+
+# Assume parameters are normally distributed
+K2 <- rnorm(mean = 2000, sd = 25, n = np)
+rprey2 <- rnorm(mean = 0.95, sd = 0.05, n = np)
+alpha2 <- rnorm(mean = 0.01, sd = 0.001, n = np)
+eff2 <- rnorm(mean = 0.6, sd = 0.1, n = np)
+pmort2 <- rnorm(mean = 0.4, sd = 0.1, n = np)
+rhunt2 <- rnorm(mean = 0.5, sd = 0.1, n = np)
+prey_thresh2 <- rnorm(mean = 150, sd = 20, n = np)
+
+X2 <- cbind.data.frame(K=K,
+                       rprey = rprey,
+                       alpha = alpha,
+                       eff = eff,
+                       pmort = pmort,
+                       rhunt = rhunt,
+                       prey_thresh = prey_thresh)
 
 
+# fix any negative values 
+X1 <- X1 |>  
+  map_df(pmax, 0.0)
+
+X2 <- X2 |>  
+  map_df(pmax, 0.0)
+
+# create our sobel object and get sets of parameters for running the model
+sens <- sobolSalt(model = NULL, X1, X2, nboot = 300)
+
+# our parameter sets are
+head(sens$X)
+
+# lets add names
+colnames(sens$X) <- c("K", 
+                      "reprey",
+                       "alpha",
+                       "eff",
+                       "pmort",
+                       "rhunt",
+                       "prey_thresh")
+
+head(sens$X)
+```
+Since we are only interested in the maximum amount of growth our metric output function will only  output the maximum growth. Code the metric output function and ensure that it works with the first row of the parameters. 
+```{r}
+# turn computing our metrics into a function
+compute_pop_metrics <- function(result) {
+  # first add maximum population
+  maxrprey <- max(result$C)
+  maxrpred <- max(result$C)
+
+  # return results
+  return(list(maxrprey = maxrprey, maxrpred = maxrpred))
+}
+
+# test that the metrics computing function works works
+# initial population
+initial_forest <- 10
+
+# run for year = 300
+simtimes <-  seq(from = 1, to = 300)
+
+# use the first parameter set for the ode function 
+parmtest <- list(r = sens_forest_size$X[1,"r"], 
+                 K = sens_forest_size$X[1,"K"], 
+                 g = sens_forest_size$X[1,"g"],
+                 thresh = sens_forest_size$X[1, "thresh"])
+
+# run ode
+result <- ode(y = initial_forest, 
+              times = simtimes, 
+              func = forestgrowth, 
+              parms = parmtest)
+
+# turn ode results into a labelled data frame 
+result <- data.frame(time=result[,1], C=result[,2])
+```
