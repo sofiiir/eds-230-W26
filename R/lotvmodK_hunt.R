@@ -35,22 +35,16 @@
 lotvmodK_hunt <- function(t, pop, pars, prey_thresh = 150) {
   with(as.list(c(pars, pop)), {
     
-    # # make sure a negative number of animals isn't being used
-    # pred <- max(pred, 0)
-    # prey <- max(prey, 0)
     
     # hunt only if there are more prey than the threshold
-    hunt <- if (prey > prey_thresh) rhunt * prey else 0 
+    hunt <- ifelse (prey > prey_thresh, rhunt * prey, 0) 
     
     # change in prey equation 
     dprey <- (rprey * (1 - prey / K) * prey - alpha * prey * pred) - hunt
     
     # change in predator equation 
     dpred <- (eff * alpha * prey * pred) - (pmort * pred)
-    
-    # # change in predator is capped at the number of predator and prey that actually exist
-    # dpred <- if (abs(dpred) > abs(pred)) pred else dpred
-    # dprey <- if (abs(dprey) > abs(prey)) prey else dprey
+  
     
     return(list(c(dprey, dpred)))
   })

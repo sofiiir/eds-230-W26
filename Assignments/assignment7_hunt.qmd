@@ -82,8 +82,8 @@ pars <- c(rprey = 0.95,
           eff = 0.6, 
           pmort = 0.4, 
           K = 2000,
-          rhunt = 0.4,
-          prey_thresh = 200)
+          rhunt = 0.1,
+          prey_thresh = 50)
 
 problem <- lotvmodK_hunt(t = 0, pop = currpop, pars = pars)
 problem
@@ -115,7 +115,7 @@ p1
 # Run a sobol global (vary all parameters at the same time) sensitivity analysis that explores how the estimated populations vary with these parameters
 ```{r}
 # set the number of parameters
-np <- 2000
+np <- 200
 
 # Assume parameters are normally distributed
 K <- rnorm(mean = 2000, sd = 25, n = np)
@@ -135,7 +135,7 @@ X1 <- cbind.data.frame(K=K,
                        prey_thresh = prey_thresh)
 
 # set the number of parameters
-np <- 2000
+np <- 200
 
 # Assume parameters are normally distributed
 K2 <- rnorm(mean = 2000, sd = 25, n = np)
@@ -170,7 +170,7 @@ head(sens$X)
 
 # lets add names
 colnames(sens$X) <- c("K", 
-                      "reprey",
+                      "rprey",
                        "alpha",
                        "eff",
                        "pmort",
@@ -179,7 +179,7 @@ colnames(sens$X) <- c("K",
 
 head(sens$X)
 ```
-Since we are only interested in the maximum amount of growth our metric output function will only  output the maximum growth. Code the metric output function and ensure that it works with the first row of the parameters. 
+Since we are only interested in the maximum amount of growth for our animal populations. Code the metric output function and ensure that it works with the first row of the parameters. 
 ```{r}
 # turn computing our metrics into a function
 compute_pop_metrics <- function(result) {
@@ -191,24 +191,28 @@ compute_pop_metrics <- function(result) {
   return(list(maxrprey = maxrprey, maxrpred = maxrpred))
 }
 
-# test that the metrics computing function works works
+# test that the metrics computing function works
 # initial population
-initial_forest <- 10
+currpop <- c(prey = 40, pred = 1)
 
-# run for year = 300
-simtimes <-  seq(from = 1, to = 300)
+# time points to see results
+days <- seq(from = 1, to = 1000, by = 1)
 
 # use the first parameter set for the ode function 
-parmtest <- list(r = sens_forest_size$X[1,"r"], 
-                 K = sens_forest_size$X[1,"K"], 
-                 g = sens_forest_size$X[1,"g"],
-                 thresh = sens_forest_size$X[1, "thresh"])
+parmtest <- list(K = sens$X[1,"K"], 
+                 rprey = sens$X[1,"rprey"], 
+                 alpha = sens$X[1,"alpha"],
+                 eff = sens$X[1, "eff"],
+                 pmort = sens$X[1, "pmort"],
+                 rhunt = sens$X[1, "rhunt"],
+                 prey_thresh = sens$X[1, "prey_thresh"])
 
 # run ode
-result <- ode(y = initial_forest, 
-              times = simtimes, 
-              func = forestgrowth, 
-              parms = parmtest)
+# run the model
+res <- ode(func = lotvmodK_hunt, 
+           y = currpop, 
+           times = days, 
+           parms = pars)
 
 # turn ode results into a labelled data frame 
 result <- data.frame(time=result[,1], C=result[,2])
