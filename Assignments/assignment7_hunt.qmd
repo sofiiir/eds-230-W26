@@ -58,7 +58,9 @@ p1 <- ggplot(resl,
              aes(time, 
                  pop, 
                  col = animal)) +
-  geom_line()
+  geom_line() + 
+  labs(title = "Animal populations based on changes in populations") +
+  theme_minimal()
 
 p1
 ```
@@ -108,11 +110,13 @@ p1 <- ggplot(resl,
              aes(time, 
                  pop, 
                  col = animal)) +
-  geom_line()
+  geom_line() + 
+  labs(title = "Animal populations based on changes in populations including hunting") +
+  theme_minimal()
 
 p1
 ```
-
+When all of the parameters are kept constant and hunting is added there is a clear difference in the animal populations over time. This is visually shown in the two plots above. There is a lot more variation for both predator and prey populations when hunting is included in the model. 
 
 # Run a sobol global (vary all parameters at the same time) sensitivity analysis that explores how the estimated populations vary with these parameters
 ```{r}
@@ -183,14 +187,16 @@ head(sens$X)
 ```
 Since we are only interested in the maximum amount of growth for our animal populations. Code the metric output function and ensure that it works with the first row of the parameters. 
 ```{r}
+#| results: hide
+
 # turn computing our metrics into a function
 compute_pop_metrics <- function(result) {
-  # first add maximum population
-  maxrprey <- max(result$prey)
-  maxrpred <- max(result$pred)
+ 
+  meanrprey <- mean(result$prey)
+  meanrpred <- mean(result$pred)
 
   # return results
-  return(list(maxrprey = maxrprey, maxrpred = maxrpred))
+  return(list(meanrprey = meanrprey, meanrpred = meanrpred))
 }
 
 # test that the metrics computing function works
@@ -284,6 +290,8 @@ result
 ```
 Try the wrapper function with the first row of the varied parameters.  
 ```{r}
+#| results: hide
+
 # try with first row of our Sobol parameters
 p_wrapper(K = sens$X[1,"K"], 
           rprey = sens$X[1,"rprey"], 
@@ -317,38 +325,112 @@ allresults
 
 ```{r}
 # "tell" the sensitivity analysis object - re-name so we keep separate
-sens_maxgrowthr <- sensitivity::tell(sens, allresults$maxrprey)
+sens_meangrowthr <- sensitivity::tell(sens, allresults$meanrprey)
 
 # first-order indices (main effect without co-variance)
-rownames(sens_maxgrowthr$S) <- c("K", 
+rownames(sens_meangrowthr$S) <- c("K", 
                                 "rprey",
                                 "alpha",
                                  "eff",
                                 "pmort",
                                 "rhunt",
                                 "prey_thresh")
-sens_maxgrowthr$S
+sens_meangrowthr$S
 
 # total sensitivity index -note that this partitions the output variance - so values sum to 1
-rownames(sens_maxgrowthr$T) <- c("K", 
+rownames(sens_meangrowthr$T) <- c("K", 
                                 "rprey",
                                 "alpha",
                                  "eff",
                                 "pmort",
                                 "rhunt",
                                 "prey_thresh")
-sens_maxgrowthr$T
+sens_meangrowthr$T
 
 # graph metric against most parameter that the output is most sensitive to, using #2 for color
 # create a data frame
 allresp <- as.data.frame(cbind(sens$X, allresults))
 
-ggplot(allresp, aes(rhunt, maxrprey, col=eff )) +
+ggplot(allresp, aes(rhunt, meanrprey, col=pmort )) +
   geom_point() +
   theme_minimal()
 ```
+
+The rate of maximum change of prey populations are most sensitive to the parameter `K` for the first order sensitivity indices. The rate of maximum change of prey populations are most sensitive to the parameter `rhunt` for the total sensitivity analysis. The rate of hunting is directly reducing the number of prey. The rate of maximum change of prey populations is secondly most sensitive to the `rprey` parameter in the first order indices. The rate of maximum change of prey populations is secondly most sensitive to the `pmort` parameter in the total order indices. This is the mortality rate of the predator population. 
+
+I chose to look at the mean rate of change of prey because these would show the average scenario for the populations of each animal. This is an important metric to give a realistic look at the populations of both animal groups. 
+
 # Metric to stability. Prey at the threshold level. 
 ```{r}
-
+max(allresp$meanrprey, na.rm = TRUE)
+min(allresp$meanrprey, na.rm = TRUE)
 ```
+Choose all rows where `meanrprey` is greater than or equal to 100. 100 is being defined as stability. 
+```{r}
 
+stable_pop <- allresp |> 
+  filter(meanrprey >= 100)
+
+ggplot(stable_pop, aes(meanrprey, K)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(stable_pop, aes(meanrprey, rprey)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(stable_pop, aes(meanrprey, alpha)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(stable_pop, aes(meanrprey, eff)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(stable_pop, aes(meanrprey, pmort)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(stable_pop, aes(meanrprey, rhunt)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(stable_pop, aes(meanrprey, prey_thresh)) +
+  geom_boxplot() + 
+  theme_minimal()
+```
+Choose all rows where `meanrprey` is greater than or equal to 100. 100 is being defined as stability. 
+```{r}
+
+unstable_pop <- allresp |> 
+  filter(meanrprey <= 100)
+
+ggplot(unstable_pop, aes(meanrprey, K)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(unstable_pop, aes(meanrprey, rprey)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(unstable_pop, aes(meanrprey, alpha)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(unstable_pop, aes(meanrprey, eff)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(unstable_pop, aes(meanrprey, pmort)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(unstable_pop, aes(meanrprey, rhunt)) +
+  geom_boxplot() + 
+  theme_minimal()
+
+ggplot(unstable_pop, aes(meanrprey, prey_thresh)) +
+  geom_boxplot() + 
+  theme_minimal()
+```
+These boxplots show the differences between the stable and unstable populations. When the boxplots are overlapping the same values this indicates that the variation in their values are likely not causing the stability versus stability. `eff`, `pmort`, and `rhunt` all have boxplots that don't overlap and differ between stability and instability.
