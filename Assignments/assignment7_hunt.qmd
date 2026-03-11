@@ -112,50 +112,7 @@ p1 <- ggplot(resl,
 
 p1
 ```
-Run the function with ODE. 
-```{r}
-# initial conditions
-currpop <- c(prey = 40, pred = 1)
 
-# time points to see results
-days <- seq(from = 1, to = 1000, by = 1)
-
-# set parameters
-pars <- c(rprey = 0.95, 
-          alpha = 0.01, 
-          eff = 0.6, 
-          pmort = 0.4, 
-          K = 2000,
-          rhunt = 0.7,
-          prey_thresh = 0)
-
-problem <- lotvmodK_hunt(t = 0, pop = currpop, pars = pars)
-problem
-
-# run the model
-res <- ode(func = lotvmodK_hunt, 
-           y = currpop, 
-           times = days, 
-           parms = pars,
-           method = "euler")
-```
-
-```{r}
-# graph the results
-head(res)
-
-# rearrange for easy plotting
-resl <- as.data.frame(res) |> 
-  pivot_longer(-time, names_to = "animal", values_to = "pop")
-
-p1 <- ggplot(resl, 
-             aes(time, 
-                 pop, 
-                 col = animal)) +
-  geom_line()
-
-p1
-```
 
 # Run a sobol global (vary all parameters at the same time) sensitivity analysis that explores how the estimated populations vary with these parameters
 ```{r}
@@ -229,11 +186,11 @@ Since we are only interested in the maximum amount of growth for our animal popu
 # turn computing our metrics into a function
 compute_pop_metrics <- function(result) {
   # first add maximum population
-  minrprey <- min(result$prey)
-  minrpred <- min(result$pred)
+  maxrprey <- max(result$prey)
+  maxrpred <- max(result$pred)
 
   # return results
-  return(list(minrprey = minrprey, minrpred = minrpred))
+  return(list(maxrprey = maxrprey, maxrpred = maxrpred))
 }
 
 # test that the metrics computing function works
@@ -386,8 +343,12 @@ sens_maxgrowthr$T
 # create a data frame
 allresp <- as.data.frame(cbind(sens$X, allresults))
 
-ggplot(allresp, aes(rhunt, minrprey, col=eff )) +
+ggplot(allresp, aes(rhunt, maxrprey, col=eff )) +
   geom_point() +
   theme_minimal()
 ```
-Metric to stability. Prey at the threshold level. 
+# Metric to stability. Prey at the threshold level. 
+```{r}
+
+```
+
