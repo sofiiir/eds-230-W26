@@ -68,7 +68,7 @@ source(here("R/lotvmodK_hunt.R"))
 lotvmodK_hunt
 ```
 
-Run the function with ODE function. 
+Run the function with ODE. 
 ```{r}
 # initial conditions
 currpop <- c(prey = 40, pred = 1)
@@ -82,7 +82,7 @@ pars <- c(rprey = 0.95,
           eff = 0.6, 
           pmort = 0.4, 
           K = 2000,
-          rhunt = 0.1,
+          rhunt = 0.7,
           prey_thresh = 50)
 
 problem <- lotvmodK_hunt(t = 0, pop = currpop, pars = pars)
@@ -92,7 +92,52 @@ problem
 res <- ode(func = lotvmodK_hunt, 
            y = currpop, 
            times = days, 
-           parms = pars)
+           parms = pars,
+           method = "euler")
+```
+
+```{r}
+# graph the results
+head(res)
+
+# rearrange for easy plotting
+resl <- as.data.frame(res) |> 
+  pivot_longer(-time, names_to = "animal", values_to = "pop")
+
+p1 <- ggplot(resl, 
+             aes(time, 
+                 pop, 
+                 col = animal)) +
+  geom_line()
+
+p1
+```
+Run the function with ODE. 
+```{r}
+# initial conditions
+currpop <- c(prey = 40, pred = 1)
+
+# time points to see results
+days <- seq(from = 1, to = 1000, by = 1)
+
+# set parameters
+pars <- c(rprey = 0.95, 
+          alpha = 0.01, 
+          eff = 0.6, 
+          pmort = 0.4, 
+          K = 2000,
+          rhunt = 0.7,
+          prey_thresh = 0)
+
+problem <- lotvmodK_hunt(t = 0, pop = currpop, pars = pars)
+problem
+
+# run the model
+res <- ode(func = lotvmodK_hunt, 
+           y = currpop, 
+           times = days, 
+           parms = pars,
+           method = "euler")
 ```
 
 ```{r}
@@ -146,13 +191,13 @@ pmort2 <- rnorm(mean = 0.4, sd = 0.1, n = np)
 rhunt2 <- rnorm(mean = 0.5, sd = 0.1, n = np)
 prey_thresh2 <- rnorm(mean = 150, sd = 20, n = np)
 
-X2 <- cbind.data.frame(K=K,
-                       rprey = rprey,
-                       alpha = alpha,
-                       eff = eff,
-                       pmort = pmort,
-                       rhunt = rhunt,
-                       prey_thresh = prey_thresh)
+X2 <- cbind.data.frame(K=K2,
+                       rprey = rprey2,
+                       alpha = alpha2,
+                       eff = eff2,
+                       pmort = pmort2,
+                       rhunt = rhunt2,
+                       prey_thresh = prey_thresh2)
 
 
 # fix any negative values 
@@ -184,11 +229,11 @@ Since we are only interested in the maximum amount of growth for our animal popu
 # turn computing our metrics into a function
 compute_pop_metrics <- function(result) {
   # first add maximum population
-  maxrprey <- max(result$C)
-  maxrpred <- max(result$C)
+  minrprey <- min(result$prey)
+  minrpred <- min(result$pred)
 
   # return results
-  return(list(maxrprey = maxrprey, maxrpred = maxrpred))
+  return(list(minrprey = minrprey, minrpred = minrpred))
 }
 
 # test that the metrics computing function works
@@ -212,8 +257,137 @@ parmtest <- list(K = sens$X[1,"K"],
 res <- ode(func = lotvmodK_hunt, 
            y = currpop, 
            times = days, 
-           parms = pars)
+           parms = parmtest)
+
+result <- data.frame(time=res[,1], prey=res[,2], pred=res[,3])
+compute_pop_metrics(result)
 
 # turn ode results into a labelled data frame 
-result <- data.frame(time=result[,1], C=result[,2])
+# result <- data.frame(time=result[,1], prey=result[,2], pred = result[,3])
 ```
+
+### Make a wrapper function to run a Sobol test 
+```{r}
+# define a wrapper function to do everything we need - run solver and compute metrics - and send back results 
+p_wrapper <- function(K, 
+                      rprey, 
+                      alpha, 
+                      eff, 
+                      pmort, 
+                      rhunt, 
+                      prey_thresh, 
+                      currpop, 
+                      simtimes, 
+                      odefunc, 
+                      metricfunc) {
+  
+  # create parameter list
+  parms <- list(K = K,
+                rprey = rprey,
+                alpha = alpha,
+                eff = eff,
+                pmort = pmort,
+                rhunt = rhunt,
+                prey_thresh = prey_thresh)
+  
+  # run the model
+res <- ode(func = odefunc, 
+           y = currpop, 
+           times = simtimes, 
+           parms = parms)
+  
+  # results as a data frame
+  result <- data.frame(time=res[,1], prey=res[,2], pred=res[,3])
+  
+  # compute metrics
+   metrics <- compute_pop_metrics(as.data.frame(result))
+   
+  return(metrics)
+}
+```
+
+Test the wrapper function with specific values for .
+```{r}
+# 
+# set the threshold 
+result <- p_wrapper(K = 2000, 
+                    rprey = 0.95, 
+                    alpha = 0.01, 
+                    eff = 0.6, 
+                    pmort = 0.4, 
+                    rhunt = 0.1, 
+                    prey_thresh = 150, 
+                    currpop = currpop, 
+                    simtimes = days, 
+                    odefunc = lotvmodK_hunt, 
+                    metricfunc = compute_pop_metrics
+          )
+
+result
+```
+Try the wrapper function with the first row of the varied parameters.  
+```{r}
+# try with first row of our Sobol parameters
+p_wrapper(K = sens$X[1,"K"], 
+          rprey = sens$X[1,"rprey"], 
+          alpha = sens$X[1,"alpha"],
+          eff = sens$X[1, "eff"],
+          pmort = sens$X[1, "pmort"],
+          rhunt = sens$X[1, "rhunt"],
+          prey_thresh = sens$X[1, "prey_thresh"],
+          currpop = currpop,
+          simtimes = days,
+          odefunc = lotvmodK_hunt, 
+          metricfunc = compute_pop_metrics)
+```
+Run the wrapper function with the entirety of the varied parameters. 
+```{r}
+#| results: hide
+#| warning: false
+#| message: false
+
+allresults <- as.data.frame(sens$X) |>  pmap(p_wrapper,
+                                             currpop = currpop,
+                                             simtimes = days,
+                                             odefunc = lotvmodK_hunt, 
+                                            metricfunc = compute_pop_metrics)
+
+allresults <- bind_rows(allresults)
+
+allresults
+```
+## Record the two Sobol indices (S and T)
+
+```{r}
+# "tell" the sensitivity analysis object - re-name so we keep separate
+sens_maxgrowthr <- sensitivity::tell(sens, allresults$maxrprey)
+
+# first-order indices (main effect without co-variance)
+rownames(sens_maxgrowthr$S) <- c("K", 
+                                "rprey",
+                                "alpha",
+                                 "eff",
+                                "pmort",
+                                "rhunt",
+                                "prey_thresh")
+sens_maxgrowthr$S
+
+# total sensitivity index -note that this partitions the output variance - so values sum to 1
+rownames(sens_maxgrowthr$T) <- c("K", 
+                                "rprey",
+                                "alpha",
+                                 "eff",
+                                "pmort",
+                                "rhunt",
+                                "prey_thresh")
+sens_maxgrowthr$T
+
+# graph metric against most parameter that the output is most sensitive to, using #2 for color
+# create a data frame
+allresp <- as.data.frame(cbind(sens$X, allresults))
+
+ggplot(allresp, aes(rhunt, minrprey, col=eff )) +
+  geom_point() +
+  theme_minimal()
+```
+Metric to stability. Prey at the threshold level. 
